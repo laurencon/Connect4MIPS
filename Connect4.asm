@@ -28,7 +28,12 @@ rows: .word 6 #$s6
        msg11: .asciiz "It's a tie!\n"
        newl: .asciiz "\n"
        space: .asciiz " "
-.text     
+.text
+convert2dto1d:
+	mul $t2,$t1,$s7
+	add $t2, $t2,$t0
+	add $t2,$t2,$s0
+     
 main:
  	
  	#convert the x and y and store it in martix conutr
