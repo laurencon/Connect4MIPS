@@ -73,6 +73,8 @@ main:
 	li $v0, 4
 	syscall
 	
+	
+	
 
 	
 
@@ -105,5 +107,9 @@ main:
 		syscall
 		li $v0, 10
 		syscall
+		
+# Time to create the basic grid
+Grid:
+	
 		
 	
