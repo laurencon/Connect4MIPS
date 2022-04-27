@@ -38,14 +38,7 @@ rows: .word 6 #$s6
 main:
 	lw $s1, heap
 	jal drawbackground
-	
-	li $a3,8
-	li $a1,2
-	li $a2,2
-	
-	li $t2,0xff0000
-	
-	jal drawsquare
+
 	jal DrawGrid
 	
 	j exit
@@ -191,29 +184,44 @@ convert2dto1d:
 	
 	jr $ra
 	
-# Time to create the basic grid
+# Time to create the basic grid]
+#s4 for white x
+#s5 for white y
 DrawGrid:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
-	
-	
-	
-	###############
-	li $a3,1
-	li $a1,63
-	li $a2,63
-	
-	li $t2,0xff00ff
-	
-	jal drawsquare
-	###############
-	li $a3,5
-	li $a1,20
-	li $a2,20
+	li $a0,0
+	li $t8, 0
+	li $a3,8
 	li $t2,0xffffff
-	
-	jal drawsquare
-	###############	
+	gridloop:#iterates through the matrix
+ 		gridloop1:
+ 			li $t9, 0
+ 			
+ 			
+ 		gridloop2:
+ 	 
+			move $a1,$t9
+			move $a2,$t8
+			
+			mul $a1,$a1,9
+			mul $a2,$a2,9
+			
+			addi $a1,$a1,1
+			addi $a2,$a2,1
+			
+ 			jal drawsquare
+ 			
+			addi $t9,$t9,1
+			beq $t9,7,gridexit1
+			
+			j gridloop2
+		gridexit1: 
+			addi $t8,$t8,1
+			beq $t8,6,gridexit2
+			j gridloop1
+		gridexit2:
+		
 	lw $ra,0($sp)
 	addi $sp,$sp, 4
 	jr $ra
