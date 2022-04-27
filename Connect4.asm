@@ -46,6 +46,7 @@ main:
 	li $t2,0xff0000
 	
 	jal drawsquare
+	jal DrawGrid
 	
 	j exit
  	#convert the x and y and store it in matrix counter
@@ -159,15 +160,14 @@ drawsquare:
 	drawsquareloop:
  		yloop: # yloop
  			li $t1,0
- 			add $t5, $a2, $t0
 
 		xloop: #xloop
  			#insert code
+ 			add $t5, $a2, $t0
  			add $t4, $a1, $t1
  			
  			jal convert2dto1d
 			sw $t2, 0($t7)
- 			
 
 			addi $t1,$t1,1
 			beq $t1,$a3,xloopexit
@@ -190,9 +190,33 @@ convert2dto1d:
 	add $t7,$t7,$s1
 	
 	jr $ra
-# Time to create the basic grid
-Grid:
 	
+# Time to create the basic grid
+DrawGrid:
+	addi $sp,$sp,-4
+	sw $ra, 0($sp)
+	
+	
+	
+	###############
+	li $a3,1
+	li $a1,63
+	li $a2,63
+	
+	li $t2,0xff00ff
+	
+	jal drawsquare
+	###############
+	li $a3,5
+	li $a1,20
+	li $a2,20
+	li $t2,0xffffff
+	
+	jal drawsquare
+	###############	
+	lw $ra,0($sp)
+	addi $sp,$sp, 4
+	jr $ra
 exit:
 	li $v0,10
 	syscall
