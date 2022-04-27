@@ -2,7 +2,7 @@
 # CS 2640 Final Project
 # Welcome to our final project, Connect 4!
 #$s0 register for heap address
-#$s1 for array address
+#$s1 for heap constant 0x10040000
 #$t0=x, $t1=y, $t2=color
 #$t2=matrixcounter $t3=displaycounter
 
@@ -16,7 +16,7 @@ Table: .word 0xFF0000 # Red Chip
        .word 0x0000FF # Blue grid
        .word 0xFFFFFF #White background for contrast
 
-heapstart: .word 0x10040000
+heap: .word 0x10040000
 
 array: .word 0:42 # 0=empty 1=player1, 2=player2
 columns: .word 7 #$s7
@@ -35,13 +35,18 @@ rows: .word 6 #$s6
        newl: .asciiz "\n"
        space: .asciiz " "
 .text
-convert2dto1d:
-	mul $t2,$t1,$s7
-	add $t2, $t2,$t0
-	add $t2,$t2,$s0
-
 main:
+	lw $s1, heap
 	jal drawbackground
+	
+	li $a3,8
+	li $a1,2
+	li $a2,2
+	
+	li $t2,0xff0000
+	
+	jal drawsquare
+	
 	j exit
  	#convert the x and y and store it in matrix counter
  	la $s6,rows
@@ -112,7 +117,7 @@ main:
 		syscall
 
 drawbackground:	
-	lw $s0, heapstart
+	lw $s0, heap
 	li $t2, 0x0000FF
 
 	sw $t2, 0($s0)
@@ -138,6 +143,52 @@ drawbackground:
 			j loopi
 		exit1:
 
+	jr $ra
+
+#Input - $(a1,a2) - (x,y)
+#Input - $t2 = Color
+#Input - $a3 = Box Width
+#t4,t5 - temporary for x,y position
+#t0,t1 - (y,x)
+
+drawsquare:
+	addi $sp,$sp,-4
+	sw $ra, 0($sp)
+
+	li $t0,0
+	drawsquareloop:
+ 		yloop: # yloop
+ 			li $t1,0
+ 			add $t5, $a2, $t0
+
+		xloop: #xloop
+ 			#insert code
+ 			add $t4, $a1, $t1
+ 			
+ 			jal convert2dto1d
+			sw $t2, 0($t7)
+ 			
+
+			addi $t1,$t1,1
+			beq $t1,$a3,xloopexit
+			j xloop
+		xloopexit:
+			addi $t0,$t0,1
+			beq $t0,$a3,yloopexit
+			j yloop
+		yloopexit:
+		
+	lw $ra,0($sp)
+	addi $sp,$sp, 4
+	jr $ra
+
+convert2dto1d:
+	mul $t7,$t5,64
+	add $t7,$t7,$t4
+	
+	mul $t7,$t7,4
+	add $t7,$t7,$s1
+	
 	jr $ra
 # Time to create the basic grid
 Grid:
