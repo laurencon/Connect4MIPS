@@ -227,6 +227,15 @@ DrawGrid:
 	lw $ra,0($sp)
 	addi $sp,$sp, 4
 	jr $ra
+CheckForWin:
+	# Connect 4 has 3 possible ways to win
+	# 1. Vertical
+	# 2. Horizontal
+	# 3. Diagonal (forward and back)
+	
+	#To check vertically, we need to start our checking from the top
+	
+	#And to check horirizontally we need to check first from the left
 exit:
 	li $v0,10
 	syscall
