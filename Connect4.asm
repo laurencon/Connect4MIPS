@@ -87,6 +87,9 @@ main:
 		
 		li $v0, 5 # syscall to read integer
 		syscall
+		jal Input
+		jal drawTheChecker
+		jal CheckForWin
 	Player2:
 		la $a0, msg6 # Displaying message to indicate the second player's turn
 		li $v0, 4
@@ -94,21 +97,12 @@ main:
 		
 		li $v0, 5 # syscall to read integer
 		syscall
-	Tie: 	la $a0, msg11
-		li $v0, 4
-		syscall
-		li $v0, 10
-		syscall
-	Winner:
-		la $a0, msg9
-		li $v0, 4
-		syscall
+		jal Input
+		jal drawTheChecker
+		jal CheckForWin
 		
-		la $a0, msg10
-		li $v0, 4
-		syscall
-		li $v0, 10
-		syscall
+j main # to continue playing game until there's a winner or a tie
+	
 drawTheChecker:
 
 	jal drawSquare
@@ -231,7 +225,7 @@ CheckForWin:
 	# Connect 4 has 3 possible ways to win
 	# 1. Vertical
 	# 2. Horizontal
-	# 3. Diagonal (positive and negative slope)
+	# 3. Diagonal (including positive and negative slope)
 	
 	#To check vertically, we need to start our checking from the top
 	VerticalWin:
@@ -242,6 +236,24 @@ CheckForWin:
 	DiagonalPositiveWin:
 	
 	DiagonalNegativeWin:
+	
+Tie: 	la $a0, msg11
+	li $v0, 4
+	syscall
+	li $v0, 10
+	syscall
+Winner:
+	beq $t0, 1 Winner2
+	la $a0, msg9
+	li $v0, 4
+	syscall
+	
+	Winner2:
+		la $a0, msg10
+		li $v0, 4
+		syscall
+		li $v0, 10
+		syscall
 	
 exit:
 	li $v0,10
