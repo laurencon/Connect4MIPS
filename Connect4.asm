@@ -11,8 +11,8 @@
 #actual w/h = 512 / 8 = 64
 
 .data
-Table: .word 0xFF0000 # Red Chip
-       .word 0xFFFF00 # Yellow Chip
+Table: .word 0xFF0000 # Red Chip - Player 1
+       .word 0xFFFF00 # Yellow Chip - Player 2
        .word 0x0000FF # Blue grid
        .word 0xFFFFFF #White background for contrast
 
@@ -109,7 +109,9 @@ main:
 		syscall
 		li $v0, 10
 		syscall
+drawTheChecker:
 
+	jal drawSquare
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
