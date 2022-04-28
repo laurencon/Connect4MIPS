@@ -227,10 +227,12 @@ CheckForWin:
 	# 2. Horizontal
 	# 3. Diagonal (including positive and negative slope)
 	
-	#To check vertically, we need to start our checking from the top
+	
+		
+	
 	VerticalWin:
-		la $t0, array($t1)
-	#And to check horirizontally we need to check first from the left
+		
+	
 	HorizontalWin:
 		la $t0, array($t1)
 	DiagonalPositiveWin:
