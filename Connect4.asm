@@ -231,11 +231,18 @@ CheckForWin:
 	# Connect 4 has 3 possible ways to win
 	# 1. Vertical
 	# 2. Horizontal
-	# 3. Diagonal (forward and back)
+	# 3. Diagonal (positive and negative slope)
 	
 	#To check vertically, we need to start our checking from the top
-	
+	VerticalWin:
+		la $t0, array($t1)
 	#And to check horirizontally we need to check first from the left
+	HorizontalWin:
+		la $t0, array($t1)
+	DiagonalPositiveWin:
+	
+	DiagonalNegativeWin:
+	
 exit:
 	li $v0,10
 	syscall
