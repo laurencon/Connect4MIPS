@@ -228,13 +228,30 @@ CheckForWin:
 	# 3. Diagonal (including positive and negative slope)
 	
 	
+	li $t0, 0 #initializing i
+	loopi:
+		li $t1, 0 # initializing j
 		
-	
+		loopj:
+			li $t4, 0 $initializing k
+			
+			loopk:
+				
+				add $t5, $t1, $t4 # $t5 = j + k
+				add $t3, $t0, $t4 # $t3 = i + k
+		
+	#value of array [i][j] = $t6
+	# $s7 = columns ,from beginning of code
+	# $s0 = base add
 	VerticalWin:
-		
-	
+		mul $t6, $t3, $s7 # $t6 = (i+k) * columns
+		add $t6, $t6, $t1
+		add $t6, $s0, $t6 
+		lb $t6, 0($t6)
+		#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
+		#And if it is then add it to the player at that time's counter of how many verticals checkers they have in a row
 	HorizontalWin:
-		la $t0, array($t1)
+		
 	DiagonalPositiveWin:
 	
 	DiagonalNegativeWin:
