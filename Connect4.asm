@@ -239,23 +239,48 @@ CheckForWin:
 				
 				add $t5, $t1, $t4 # $t5 = j + k
 				add $t3, $t0, $t4 # $t3 = i + k
+				sub $t7, $t1, $t4 # $t7 = j - k
 		
 	#value of array [i][j] = $t6
 	# $s7 = columns ,from beginning of code
 	# $s0 = base add
+	
 	VerticalWin:
+	
 		mul $t6, $t3, $s7 # $t6 = (i+k) * columns
 		add $t6, $t6, $t1
 		add $t6, $s0, $t6 
 		lb $t6, 0($t6)
 		#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
 		#And if it is then add it to the player at that time's counter of how many verticals checkers they have in a row
+		
 	HorizontalWin:
+	
+		mul $t6, $t0, $s7 # $t6 = i * columns
+		add $t6, $t6, $t5
+		add $t6, $s0, $t6 
+		lb $t6, 0($t6)
+		#insert code for argument if the array [i] [j + k] is not equal then go to HorizontalWin
+		#And if it is then add it to the player at that time's counter of how many verticals checkers they have in a row
 		
 	DiagonalPositiveWin:
 	
+		mul $t6, $t3, $s7 # $t6 = (i+k) * columns
+		add $t6, $t6, $t5
+		add $t6, $s0, $t6 
+		lb $t6, 0($t6)
+		#insert code for argument if the array [i +k] [j + k] is not equal then go to HorizontalWin
+		#And if it is then add it to the player at that time's counter of how many verticals checkers they have in a row
+		
 	DiagonalNegativeWin:
 	
+		mul $t6, $t3, $s7 # $t6 = (i+k) * columns
+		add $t6, $t6, $t7
+		add $t6, $s0, $t6 
+		lb $t6, 0($t6)
+		#insert code for argument if the array [i + k] [j - k] is not equal then go to HorizontalWin
+		#And if it is then add it to the player at that time's counter of how many verticals checkers they have in a row
+		
 Tie: 	la $a0, msg11
 	li $v0, 4
 	syscall
