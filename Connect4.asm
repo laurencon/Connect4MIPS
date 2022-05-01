@@ -4,7 +4,7 @@
 #$s0 register for heap address
 #$s1 for heap constant 0x10040000
 #$t0=x, $t1=y, $t2=color
-#$t2=matrixcounter $t3=displaycounter
+#$t6=matrixcounter $t3=displaycounter
 
 #unitwidth = 8
 #w/h = 512
@@ -38,9 +38,8 @@ rows: .word 6 #$s6
 main:
 	lw $s1, heap
 	jal drawbackground
-
 	jal DrawGrid
-	
+	jal drawTheChecker
 	j exit
  	#convert the x and y and store it in matrix counter
  	la $s6,rows
@@ -87,7 +86,7 @@ main:
 		
 		li $v0, 5 # syscall to read integer
 		syscall
-		jal Input
+		#jal Input
 		jal drawTheChecker
 		jal CheckForWin
 	Player2:
@@ -97,7 +96,7 @@ main:
 		
 		li $v0, 5 # syscall to read integer
 		syscall
-		jal Input
+		#jal Input
 		jal drawTheChecker
 		jal CheckForWin
 		
@@ -105,33 +104,45 @@ j main # to continue playing game until there's a winner or a tie
 	
 drawTheChecker:
 
-	jal drawSquare
+	addi $sp,$sp,-4
+	sw $ra, 0($sp)
+	li $t2, 0xFF0000
+	li $a3,8
+	li $a1,0
+	li $a2,0
+	
+		mul $a1,$a1,9
+		mul $a2,$a2,9
+			
+		addi $a1,$a1,1
+		addi $a2,$a2,1
+		
+	jal drawsquare
+	lw $ra,0($sp)
+	addi $sp,$sp, 4
+	jr $ra
+	
+	
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
-
 	sw $t2, 0($s0)
-	
-	li $v0, 1
-	li $a0, 0
-	syscall
-	
 	li $t0,0
-	loopcounter:
- 		loopi:
+	backgroundloop:
+ 		backi:
  			li $t1,0
- 		loopj:
+ 		backj:
  			sw $t2, 0($s0) 			
  			addi $s0,$s0,4
  			
 			addi $t1,$t1,1
-			beq $t1,64,exit2
-			j loopj
-		exit2: 
+			beq $t1,64,backexitj
+			j backj
+		backexitj: 
 			addi $t0,$t0,1
-			beq $t0,64,exit1
-			j loopi
-		exit1:
+			beq $t0,64,backexiti
+			j backi
+		backexiti:
 
 	jr $ra
 
@@ -186,7 +197,6 @@ convert2dto1d:
 DrawGrid:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
-	li $a0,0
 	li $t8, 0
 	li $a3,8
 	li $t2,0xffffff
@@ -234,7 +244,7 @@ CheckForWin:
 		li $t1, 0 # initializing j
 		
 		loopj:
-			li $t4, 0 $initializing k
+			li $t4, 0 #$initializing k
 			
 			loopk:
 				
@@ -245,7 +255,7 @@ CheckForWin:
 				#value of array [i][j] = $t6
 				# $s7 = columns ,from beginning of code
 				# $s0 = base add
-				$ a0 = the number of player (1 or 2) #may change later depending on how input is stored :)
+				#$ a0 = the number of player (1 or 2) #may change later depending on how input is stored :)
 				
 				VerticalWin:
 	
