@@ -237,17 +237,27 @@ CheckForWin:
 	# 1. Vertical
 	# 2. Horizontal
 	# 3. Diagonal (including positive and negative slope)
-	# $s4 = 4, how many tokens we need to WIN
+	# $t2 = 4, how many tokens we need to WIN
 	
 	li $t0, 0 #initializing i
-	loopi:
+	li $t1, 0
+	li $t2, 4
+	li $a1, 2
+	loopa:
+		bge $t0, $s6, ContinueChecking
 		li $t1, 0 # initializing j
 		
-		loopj:
-			li $t4, 0 #$initializing k
+		loopb:
+			bge $t1, $s7, loopaContinued
+			li $t4, 0 #initializing k
+			li $t8, 0
+			li $t9, 0
+			li $t5, 0
+			li $t3, 0
 			
-			loopk:
-				
+			
+			loopc:
+				bge $t4, $t2, CheckFor4
 				add $s5, $t1, $t4 # $s5 = j + k
 				add $s3, $t0, $t4 # $s3 = i + k
 				sub $t7, $t1, $t4 # $t7 = j - k
@@ -255,32 +265,33 @@ CheckForWin:
 				#value of array [i][j] = $t6
 				# $s7 = columns ,from beginning of code
 				# $s0 = base add
-				#$ a0 = the number of player (1 or 2) #may change later depending on how input is stored :)
+				# $s4 = the number of player (1 or 2) may change later depending on how input is stored :)
 				
 				VerticalWin:
-	
+					bge $t0, $a1, DiagonalPositiveWin
 					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
 					add $t6, $t6, $t1
 					add $t6, $s0, $t6 
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
-					bne $t6, $a0, HorizontalWin
+					bne $t6, $a0, DiagonalPositiveWin
 					addi $t8, $t8, 1
 					
 				HorizontalWin:
-	
+					bge $t1, $t2, VerticalWin
 					mul $t6, $t0, $s7 # $t6 = i * columns
 					add $t6, $t6, $s5
 					add $t6, $s0, $t6 
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i] [j + k] is not equal then go to DiagonalPositiveWin
-					bne $t6, $a0, DiagonalPositiveWin
+					bne $t6, $a0, VerticalWin
 					addi $t9, $t9, 1
 					
 				DiagonalPositiveWin:
-	
+					bge $t0, $a1, DiagonalNegativeWin
+					bge $t1, $t2, DiagonalNegativeWin
 					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
 					add $t6, $t6, $s5
 					add $t6, $s0, $t6 
@@ -291,34 +302,40 @@ CheckForWin:
 					addi $t5, $t5, 1
 					
 				DiagonalNegativeWin:
-	
+					bge $t0, $a1, loopcContinued
+					ble $t1, $a1, loopcContinued
 					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
 					add $t6, $t6, $t7
 					add $t6, $s0, $t6 
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i + k] [j - k] is not equal then go to HorizontalWin
-					bne $t6, $a0, loopkContinued
+					bne $t6, $a0, loopcContinued
 					addi $t3, $t3, 1
 			CheckFor4:
-				beq $t8, $s4, Winner #may change based on how input is stored :)
-				beq $t9, $s4, Winner
-				beq $t5, $s4, Winner
-				beq $t3, $s4, Winner
+				beq $t8, $t2, Winner #may change based on how input is stored :)
+				beq $t9, $t2, Winner
+				beq $t5, $t2, Winner
+				beq $t3, $t2, Winner
 				
 				# if none of these statements are true then we need to conclude with a tie
+			ContinueChecking:
 				
-	loopiContinued:
-		addi $t0, $t0, 1
-		j loopi
+				jr $ra
 		
-		loopjContinued:
+				
+	loopaContinued:
+		addi $t0, $t0, 1
+		j loopa
+		
+		loopbContinued:
 			addi $t1, $t1, 0
-			j loopj
+			j loopb
 			
-			loopkContinued:
+			loopcContinued:
 				addi $t4, $t4, 1
-				j loopk
+				j loopc
+			
 				
 				
 Tie: 	la $a0, msg11
