@@ -336,6 +336,33 @@ CheckForWin:
 				addi $t4, $t4, 1
 				j loopc
 			
+CheckForTie:
+
+	li $s4, 0
+	li $t0, 0
+	
+	loopaTie:
+		bge $t0, $s6, Tie
+		li $t1, 0
+		
+		loopbTie:
+			bge $t1, $s7, continuedTie
+			mul $t6, $t0, $s7
+			add $t6, $t6, $t1
+			add $t6, $s0, $t6
+			lb $t6, 0($t6)
+			
+			beq $t6, $s4, exitNoTie
+			addi $t1, $t1, 1
+			j loopbTie
+			
+	continuedTie:
+		addi $t0, $t0, 1
+		j loopaTie
+			
+	exitNoTie:
+		jr $ra
+				
 				
 				
 Tie: 	la $a0, msg11
