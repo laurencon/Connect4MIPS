@@ -275,7 +275,7 @@ CheckForWin:
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
-					bne $t6, $a0, DiagonalPositiveWin
+					bne $t6, $s4, DiagonalPositiveWin
 					addi $t8, $t8, 1
 					
 				HorizontalWin:
@@ -286,7 +286,7 @@ CheckForWin:
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i] [j + k] is not equal then go to DiagonalPositiveWin
-					bne $t6, $a0, VerticalWin
+					bne $t6, $s4, VerticalWin
 					addi $t9, $t9, 1
 					
 				DiagonalPositiveWin:
@@ -298,7 +298,7 @@ CheckForWin:
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i +k] [j + k] is not equal then go to DiagonalNegativeWin
-					bne $t6, $a0, DiagonalNegativeWin
+					bne $t6, $s4, DiagonalNegativeWin
 					addi $t5, $t5, 1
 					
 				DiagonalNegativeWin:
@@ -310,10 +310,10 @@ CheckForWin:
 					lb $t6, 0($t6)
 					
 					#insert code for argument if the array [i + k] [j - k] is not equal then go to HorizontalWin
-					bne $t6, $a0, loopcContinued
+					bne $t6, $s4, loopcContinued
 					addi $t3, $t3, 1
 			CheckFor4:
-				beq $t8, $t2, Winner #may change based on how input is stored :)
+				beq $t8, $t2, Winner 
 				beq $t9, $t2, Winner
 				beq $t5, $t2, Winner
 				beq $t3, $t2, Winner
