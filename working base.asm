@@ -125,7 +125,7 @@ userinput:
 	
 		checkcolumn:
 			# save column to x ($t0)
-			la $t0, $t9
+			la $t0, ($t9 )
 		
 			# find array index of the first element in specified column
 			mul $t9, $t9, 6
