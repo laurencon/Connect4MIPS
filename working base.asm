@@ -124,6 +124,9 @@ userinput:
 			j collectinput
 	
 		checkcolumn:
+			# save column to x ($t0)
+			la $t0, $t9
+		
 			# find array index of the first element in specified column
 			mul $t9, $t9, 6
 			sub $t9, $t9, 6
@@ -141,10 +144,16 @@ userinput:
 			lw $t7, ($t8)
 	
 			# if element is 0, store user number in array
-			bne $t7, 0 , nextelement	
-				# !! stores either 1 or 2 into array. temp value must by changed depending on player turn
+			bne $t7, 0 , nextelement
+			
+				# if there is an empty spot in the column:	
+				# stores player value 1 or 2 into array.
 				sw $s4, ($t8)
+				# stores the (counter value + 1) as y value to $t1
+				add $t1, $t4, 1
 				
+				# !!! SUCCESSFUL EXIT JUMP !!!
+				# Determines where the function jumps to on success
 				j checkforwin
 		
 				nextelement:
@@ -247,8 +256,11 @@ checkforwin:
 				j check4elements
 	
 	nowin:
-	# check if 42 moves have been made
+	# check if 42 moves have been made and jumps to tie
 	beq $s5, 42, tie
+	
+	# !!! Exit Jump - where to jump to if no win detected and board is not yet full !!!
+	# if no tie, loop back to user input to start next player turn
 	j userinput
 	
 
