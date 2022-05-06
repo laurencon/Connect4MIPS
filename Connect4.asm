@@ -106,12 +106,13 @@ userinput:
 			li $s4, 2
 			la $a0, msg6
 			li $v0, 4
+			syscall
 			
 			#load player1 color into $t2
 			la $t2, player2color
 			lw $t2, 0($t2)
 			
-			#syscall
+			
 		
 	promptinput:
 		la $a0, msg2
@@ -181,8 +182,8 @@ userinput:
 				
 				# !!! exit jump !!!
 				# Determines where the function jumps to on success
-				j drawTheChecker
-				# j checkforwin
+				jal drawTheChecker
+				j checkforwin
 		
 				nextelement:
 					add $t8, $t8, 4
