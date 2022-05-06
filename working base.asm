@@ -170,9 +170,6 @@ userinput:
 						li $v0, 4
 						syscall
 						j collectinput
-		
-	
-
 
 checkforwin:
 	# $t3 	win sequence loop counter 

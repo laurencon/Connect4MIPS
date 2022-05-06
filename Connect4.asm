@@ -11,8 +11,10 @@
 #actual w/h = 512 / 8 = 64
 
 .data
-Table: .word 0xFF0000 # Red Chip - Player 1
-       .word 0xFFFF00 # Yellow Chip - Player 2
+player1color: .word 0xFF0000 # Red Chip - Player 1
+player2color: .word 0xFFFF00 # Yellow Chip - Player 2
+
+Table:
        .word 0x0000FF # Blue grid
        .word 0xFFFFFF #White background for contrast
 
@@ -21,26 +23,32 @@ heap: .word 0x10040000
 array: .word 0:42 # 0=empty 1=player1, 2=player2
 columns: .word 7 #$s7
 rows: .word 6 #$s6
-       msg1: .asciiz "\nWelcome to our game Connect 4! The first player is gonna have the first turn."
-       msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in."
+       msg1: .asciiz "\nWelcome to our game Connect 4!"
+       msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
        msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
-       msg4: .asciiz "\nHave fun and good luck! :)"
-       msg5: .asciiz "\nIt's player 1's turn: "
-       msg6: .asciiz "\nIt's player 2's turn: "
+       msg4: .asciiz "\nHave fun and good luck! :)\n"
+       msg5: .asciiz "\nIt's player 1's turn"
+       msg6: .asciiz "\nIt's player 2's turn"
        msg7: .asciiz "Choose a number between 1-7:\n"
        msg8: .asciiz "Column is full, please choose again.\n"
        msg9: .asciiz "The winner is player 1! Congrats!\n"
        msg10: .asciiz "The winner is player 2! Congrats!\n"
        msg11: .asciiz "It's a tie!\n"
+       msg12: .asciiz "The input is invalid, please enter a number from 1-7: "
+       msg13: .asciiz "counter"
+       msg14: .asciiz "loop\n"
+       msg15: .asciiz "Column is full, please try another column: " 
        newl: .asciiz "\n"
        space: .asciiz " "
 .text
 main:
+	la $s2, array
 	lw $s1, heap
 	jal drawbackground
 	jal DrawGrid
+	
 	jal drawTheChecker
-	j exit
+	
  	#convert the x and y and store it in matrix counter
  	la $s6,rows
  	lw $s6,0($s6)
@@ -49,80 +57,160 @@ main:
  	li $t0,0
  	li $t1,0
  	
- 	loopcounter123:#iterates through the matrix
- 		loopi123:
- 			li $t1,0
- 		loopj123:
- 			#insert code 
-			addi $t1,$t1,1
-			beq $t1,$s7,exit2123#x
-			j loopj123
-		exit2123: 
-			addi $t0,$t0,1
-			beq $t0,$s6,exit1123
-			j loopi123
-		exit1123:
-		
 	la $a0, msg1 # Displaying all welcome messages to introduce the game to player
 	li $v0, 4
 	syscall 
 	
-	la $a0, msg2
-	li $v0, 4
-	syscall
-	
-	la $a0, msg3
-	li $v0, 4
-	syscall
-	
 	la $a0, msg4
 	li $v0, 4
 	syscall
-
-	Player1:
-		la $a0, msg5 # Displaying message to indicate the first player's turn
-		li $v0, 4
-		syscall
-		
-		li $v0, 5 # syscall to read integer
-		syscall
-		#jal Input
-		jal drawTheChecker
-		jal CheckForWin
-	Player2:
-		la $a0, msg6 # Displaying message to indicate the second player's turn
-		li $v0, 4
-		syscall
-		
-		li $v0, 5 # syscall to read integer
-		syscall
-		#jal Input
-		jal drawTheChecker
-		jal CheckForWin
-		
-j main # to continue playing game until there's a winner or a tie
 	
-drawTheChecker:
+	j userinput
+	j exit
 
+userinput:
+	# t4 counter
+	# t7 temp value
+	# t8 address of board element
+	# t9 temp value
+
+	# check if playervalue is 0,1,2
+	checkplayerturn:
+		beq $s4, 0, player1
+		beq $s4, 1, player2
+		beq $s4, 2, player1
+	
+		player1:
+			li $s4, 1
+			la $a0, msg5
+			li $v0, 4
+			syscall
+			
+			#load player1 color into $t2
+			la $t2, player1color
+			lw $t2, 0($t2)
+			
+			#li $t2, 0xFF0000
+			j promptinput
+	
+		player2:
+			li $s4, 2
+			la $a0, msg6
+			li $v0, 4
+			
+			#load player1 color into $t2
+			la $t2, player2color
+			lw $t2, 0($t2)
+			
+			syscall
+		
+	promptinput:
+		la $a0, msg2
+		li $v0, 4
+		syscall
+
+	collectinput:
+		# get user input and store in $t9
+		li $v0, 5
+		syscall
+		move $t9, $v0
+	
+		# check if user input is out of bounds
+		blt $t9, 1, invalidinput
+		bgt $t9, 7, invalidinput
+		j checkcolumn
+	
+		invalidinput:
+			la $a0, msg12
+			li $v0, 4
+			syscall
+			j collectinput
+	
+		checkcolumn:
+			# save column to x ($t0)
+			la $t0, ($t9)
+		
+			# find array index of the first element in specified column
+			mul $t9, $t9, 6
+			sub $t9, $t9, 6
+			# multiply index by 4
+			mul $t9, $t9, 4
+	
+			# get address of array element
+			add $t8, $s2, $t9
+
+			# ! counter iterator
+			li $t4, 0
+
+		checkempty:
+			# load value of array index
+			lw $t7, ($t8)
+	
+			# if element is 0, store user number in array
+			bne $t7, 0 , nextelement
+			
+				# if there is an empty spot in the column:	
+				# stores player value 1 or 2 into array.
+				sw $s4, ($t8)
+				# stores the (counter value + 1) as y value to $t1
+				add $t1, $t4, 1
+				
+				li $v0,1
+				move $a0, $t0
+				syscall
+				move $a0, $t1
+				syscall
+				
+				move $a1,$t0
+				move $a2,$t1
+				
+				subi $a1,$a1,1
+				subi $a2,$a2,0
+				
+				mul $a2,$a2,-1
+				addi $a2,$a2,6
+				
+				j drawTheChecker
+				
+				# !!! SUCCESSFUL EXIT JUMP !!!
+				# Determines where the function jumps to on success
+				j checkforwin
+		
+				nextelement:
+					add $t8, $t8, 4
+					add $t4, $t4, 1
+					
+					# if counter < 6, keep looping
+					# if counter == 6, error msg and break loop
+					beq $t4, 6, columnfull
+						j checkempty
+					
+					columnfull:
+						la $a0, msg15
+						li $v0, 4
+						syscall
+						j collectinput
+
+drawTheChecker:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
-	li $t2, 0xFF0000
-	li $a3,8
-	li $a1,0
-	li $a2,0
 	
-		mul $a1,$a1,9
-		mul $a2,$a2,9
+	li $a3,8
+	
+	mul $a1,$a1,9
+	mul $a2,$a2,9
 			
-		addi $a1,$a1,1
-		addi $a2,$a2,1
+	addi $a1,$a1,1
+	addi $a2,$a2,1
 		
 	jal drawsquare
 	lw $ra,0($sp)
 	addi $sp,$sp, 4
 	jr $ra
-	
-	
+
+checkforwin:
+	j userinput
+	j exit
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
@@ -337,7 +425,6 @@ CheckForWin:
 				j loopc
 			
 CheckForTie:
-
 	li $s4, 0
 	li $t0, 0
 	
