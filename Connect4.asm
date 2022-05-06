@@ -1,4 +1,4 @@
-# Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras
+# Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras, Leonard Woo
 # CS 2640 Final Project
 # Welcome to our final project, Connect 4!
 # $s0 register for heap address
@@ -336,102 +336,104 @@ CheckForWin:
 	# 3. Diagonal (including positive and negative slope)
 	# $t2 = 4, how many tokens we need to WIN
 	
-	li $t0, 0 #initializing i
-	li $t1, 0
-	li $t2, 4
-	li $a1, 2
+	li $t0, 0 #initializing a
+	li $t1, 0 # initializing b
+	li $t2, 4 # $t2 = 4
+	li $a1, 2 # $a1 = 2
+	lw $s6, rows
+	lw $s7, columns
+	lw $s1, heap
+	
 	loopa:
-		bge $t0, $s6, ContinueChecking
-		li $t1, 0 # initializing j
+		bge $t0, $s6, ContinueChecking # if a is >= than row than branch
+		li $t1, 0 # initializing b
 		
 		loopb:
-			bge $t1, $s7, loopaContinued
-			li $t4, 0 #initializing k
-			li $t8, 0
-			li $t9, 0
-			li $t5, 0
-			li $t3, 0
+			bge $t1, $s7, loopaContinued # if b >= columns than branch
+			li $t4, 0 #initializing c
+			li $t8, 0 #incrementing for vertical
+			li $t9, 0 #incrementing for horizontal
+			li $t5, 0 #incrementing for positive
+			li $t3, 0 #incrementing for negative
 			
 			
 			loopc:
-				bge $t4, $t2, CheckFor4
-				add $s5, $t1, $t4 # $s5 = j + k
-				add $s3, $t0, $t4 # $s3 = i + k
-				sub $t7, $t1, $t4 # $t7 = j - k
+				bge $t4, $t2, CheckFor4 # if c >= 4 than branch
+				add $s5, $t1, $t4 # $s5 = b + c
+				add $s3, $t0, $t4 # $s3 = a + c
+				sub $t7, $t1, $t4 # $t7 = b - c
 		
-				#value of array [i][j] = $t6
+				# value of array [a][b] = $t6
+				# $s6 = rows
 				# $s7 = columns ,from beginning of code
-				# $s0 = base add
-				# $s4 = the number of player (1 or 2) may change later depending on how input is stored :)
-				
-				VerticalWin:
-					bge $t0, $a1, DiagonalPositiveWin
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
-					add $t6, $t6, $t1
-					add $t6, $s0, $t6 
-					lb $t6, 0($t6)
-					
-					#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
-					bne $t6, $s4, DiagonalPositiveWin
-					addi $t8, $t8, 1
-					
+				# $s2 = base add
+				# $s4 = the number of player (1 or 2) 
 				HorizontalWin:
-					bge $t1, $t2, VerticalWin
-					mul $t6, $t0, $s7 # $t6 = i * columns
+					bge $t1, $t2, VerticalWin # if b >= 4 than branch
+					mul $t6, $t0, $s7 # $t6 = a * columns
 					add $t6, $t6, $s5
-					add $t6, $s0, $t6 
+					add $t6, $s1, $t6 
 					lb $t6, 0($t6)
 					
-					#insert code for argument if the array [i] [j + k] is not equal then go to DiagonalPositiveWin
+					# if the array [a] [b + c] is not equal then go to vertical
 					bne $t6, $s4, VerticalWin
 					addi $t9, $t9, 1
 					
-				DiagonalPositiveWin:
-					bge $t0, $a1, DiagonalNegativeWin
-					bge $t1, $t2, DiagonalNegativeWin
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
-					add $t6, $t6, $s5
-					add $t6, $s0, $t6 
+				VerticalWin:
+					bge $t0, $a1, DiagonalPositiveWin # if a >= 2 then branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
+					add $t6, $t6, $t1
+					add $t6, $s1, $t6 
 					lb $t6, 0($t6)
 					
-					#insert code for argument if the array [i +k] [j + k] is not equal then go to DiagonalNegativeWin
+					# if the array [a + c] [b] is not equal then go to HorizontalWin
+					bne $t6, $s4, DiagonalPositiveWin
+					addi $t8, $t8, 1
+					
+				
+				DiagonalPositiveWin:
+					bge $t0, $a1, DiagonalNegativeWin # if a >= 2 than branch
+					bge $t1, $t2, DiagonalNegativeWin # if b >= 4 than branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
+					add $t6, $t6, $s5 
+					add $t6, $s1, $t6 
+					lb $t6, 0($t6)
+					
+					# if the array [a +c] [b + c] is not equal then go to DiagonalNegativeWin
 					bne $t6, $s4, DiagonalNegativeWin
 					addi $t5, $t5, 1
 					
 				DiagonalNegativeWin:
-					bge $t0, $a1, loopcContinued
-					ble $t1, $a1, loopcContinued
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
+					bge $t0, $a1, loopcContinued # if a >= 2 than branch
+					ble $t1, $a1, loopcContinued # if b <= 2 than branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
 					add $t6, $t6, $t7
-					add $t6, $s0, $t6 
+					add $t6, $s1, $t6 
 					lb $t6, 0($t6)
 					
-					#insert code for argument if the array [i + k] [j - k] is not equal then go to HorizontalWin
+					# if the array [i + k] [j - k] is not equal then go to HorizontalWin
 					bne $t6, $s4, loopcContinued
 					addi $t3, $t3, 1
+					
+					loopcContinued:
+						addi $t4, $t4, 1
+						j loopc
+		
 			CheckFor4:
 				beq $t8, $t2, Winner 
 				beq $t9, $t2, Winner
 				beq $t5, $t2, Winner
 				beq $t3, $t2, Winner
 				
-				# if none of these statements are true then we need to conclude with a tie
-			ContinueChecking:
-				
-				jr $ra
-		
-				
-	loopaContinued:
-		addi $t0, $t0, 1
-		j loopa
-		
-		loopbContinued:
-			addi $t1, $t1, 0
-			j loopb
+		loopaContinued:
+			addi $t0, $t0, 1
+			j loopa
 			
-			loopcContinued:
-				addi $t4, $t4, 1
-				j loopc
+				
+	# if none of these statements are true then we need to conclude with a tie
+	ContinueChecking:
+				
+		jr $ra
 			
 CheckForTie:
 	li $s4, 0
