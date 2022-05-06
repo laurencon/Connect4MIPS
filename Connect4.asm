@@ -110,9 +110,7 @@ userinput:
 			
 			#load player1 color into $t2
 			la $t2, player2color
-			lw $t2, 0($t2)
-			
-			
+			lw $t2, 0($t2)		
 		
 	promptinput:
 		la $a0, msg2
@@ -183,7 +181,8 @@ userinput:
 				# !!! exit jump !!!
 				# Determines where the function jumps to on success
 				jal drawTheChecker
-				j checkforwin
+				jal CheckForWin
+				j userinput
 		
 				nextelement:
 					add $t8, $t8, 4
