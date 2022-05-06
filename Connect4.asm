@@ -1,10 +1,14 @@
 # Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras
 # CS 2640 Final Project
 # Welcome to our final project, Connect 4!
-#$s0 register for heap address
-#$s1 for heap constant 0x10040000
-#$t0=x, $t1=y, $t2=color
-#$t6=matrixcounter $t3=displaycounter
+# $s0 register for heap address
+# $s1 for heap constant 0x10040000
+# $s2	board array address
+# $s3	win array address
+# $s4 	player 1 or 2
+# $s5	total moves made counter
+# $t0=x, $t1=y, $t2=color
+# $t6=matrixcounter $t3=displaycounter
 
 #unitwidth = 8
 #w/h = 512
@@ -66,9 +70,14 @@ main:
 	syscall
 	
 	j userinput
-	j exit
+	
 
 userinput:
+# checks if the playervalue ($s4) is 0/1/2 then switches the player turn
+# then prompts the player to choose the column number
+# checks for valid column # and if column is not full
+# writes the playervalue to the array and exits
+	# temporary registers used. values not saved.
 	# t4 counter
 	# t7 temp value
 	# t8 address of board element
@@ -102,7 +111,7 @@ userinput:
 			la $t2, player2color
 			lw $t2, 0($t2)
 			
-			syscall
+			#syscall
 		
 	promptinput:
 		la $a0, msg2
@@ -170,11 +179,10 @@ userinput:
 				mul $a2,$a2,-1
 				addi $a2,$a2,6
 				
-				j drawTheChecker
-				
-				# !!! SUCCESSFUL EXIT JUMP !!!
+				# !!! exit jump !!!
 				# Determines where the function jumps to on success
-				j checkforwin
+				j drawTheChecker
+				# j checkforwin
 		
 				nextelement:
 					add $t8, $t8, 4
@@ -208,9 +216,10 @@ drawTheChecker:
 	addi $sp,$sp, 4
 	jr $ra
 
+# placeholder checkforwin
 checkforwin:
 	j userinput
-	j exit
+	# j exit
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
