@@ -76,6 +76,11 @@ main:
 	syscall
 	
 userinput:
+# checks if the playervalue ($s4) is 0/1/2 then switches the player turn
+# then prompts the player to choose the column number
+# checks for valid column # and if column is not full
+# writes the playervalue to the array and exits
+	# temporary registers used. values not saved.
 	# t4 counter
 	# t7 temp value
 	# t8 address of board element
@@ -172,6 +177,11 @@ userinput:
 						j collectinput
 
 checkforwin:
+# compares the board array with an array of win conditions
+# if a win condition is matched, declares the win
+# if the move counter == 42, then declares a tie if no win condition met
+# if no win condition and move counter < 42, loops back to user input for next player turn
+	# temp registers used. no values saved. 
 	# $t3 	win sequence loop counter 
 	# $t4 	iteration counter
 	# $t5	summation counter
