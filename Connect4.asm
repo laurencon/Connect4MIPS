@@ -424,6 +424,8 @@ CheckForWin:
 				beq $t9, $t2, Winner
 				beq $t5, $t2, Winner
 				beq $t3, $t2, Winner
+				addi $t1, $t1, 1
+				j loopb
 				
 		loopaContinued:
 			addi $t0, $t0, 1
