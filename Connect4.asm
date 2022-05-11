@@ -4,7 +4,7 @@
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
 # $s2	board array address
-# $s3	win array address
+# $s3	board array address - row major order
 # $s4 	player 1 or 2
 # $s5	total moves made counter
 # $t0=x, $t1=y, $t2=color
@@ -24,9 +24,11 @@ Table:
 
 heap: .word 0x10040000
 
-array: .word 0:42 # 0=empty 1=player1, 2=player2
-columns: .word 7 #$s7
-rows: .word 6 #$s6
+array: 		.word 	0:42 # 0=empty 1=player1, 2=player2
+rowmajor:	.word 	0:42 # 0=empty 1=player1, 2=player2
+
+columns: 	.word 7 #$s7
+rows: 		.word 6 #$s6
        msg1: .asciiz "\nWelcome to our game Connect 4!"
        msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
        msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
@@ -47,6 +49,7 @@ rows: .word 6 #$s6
 .text
 main:
 	la $s2, array
+	#la $s3, rowmajor
 	lw $s1, heap
 	jal drawbackground
 	jal DrawGrid
@@ -79,6 +82,7 @@ userinput:
 # writes the playervalue to the array and exits
 	# temporary registers used. values not saved.
 	# t4 counter
+	# t6 address of row major board element
 	# t7 temp value
 	# t8 address of board element
 	# t9 temp value
@@ -137,18 +141,28 @@ userinput:
 		checkcolumn:
 			# save column to x ($t0)
 			la $t0, ($t9)
+			# ! counter iterator 
+			li $t4, 1
 		
 			# find array index of the first element in specified column
-			mul $t9, $t9, 6
-			sub $t9, $t9, 6
+			#mul $t9, $t9, 6
+			#sub $t9, $t9, 6
 			# multiply index by 4
+			#mul $t9, $t9, 4
+			# get address of array element
+			#add $t8, $s2, $t9
+			
+			# rowmajor index = (6-y)*7+x-1
+			li $t7, 6		# $t7 = 6
+			sub $t9, $t7, $t4	# 6 - y
+			mul $t9, $t9, 7		# *7
+			add $t9, $t9, $t0	# +x
+			sub $t9, $t9, 1		# +1
 			mul $t9, $t9, 4
-	
 			# get address of array element
 			add $t8, $s2, $t9
 
-			# ! counter iterator
-			li $t4, 0
+
 
 		checkempty:
 			# load value of array index
@@ -160,9 +174,31 @@ userinput:
 				# if there is an empty spot in the column:	
 				# stores player value 1 or 2 into array.
 				sw $s4, ($t8)
-				# stores the (counter value + 1) as y value to $t1
-				add $t1, $t4, 1
+				# ! CHANGED ! stores the (counter value + 1) as y value to $t1
+				#add $t1, $t4, 1
+				# stores counter value as y value to $t1
+				la $t1, ($t4)
 				
+				#writetorowmajor:
+				# rowmajor index = (6-y)*7+x-1
+				#	li $t7, 6		# $t7 = 6
+				#	sub $t9, $t7, $t1
+				#	mul $t9, $t9, 7
+				#	add $t9, $t9, $t0
+				#	sub $t9, $t9, 1
+				#	
+				#	# add to index of non-row-order array instead. conflicts with $s3
+				#	add $t9, $t9, 42
+				#	
+				#	# multiply index by 4 
+				#	mul $t9, $t9, 4
+				#	# get address in rowmajor array
+				#	# add $t6, $s3, $t9	
+				#	add $t6, $s2, $t9
+				#		
+				#	sw $s4, ($t6)
+					
+								
 				li $v0,1
 				move $a0, $t0
 				syscall
@@ -185,12 +221,13 @@ userinput:
 				j userinput
 		
 				nextelement:
-					add $t8, $t8, 4
+					#add $t8, $t8, 4
+					sub $t8, $t8, 28
 					add $t4, $t4, 1
 					
-					# if counter < 6, keep looping
-					# if counter == 6, error msg and break loop
-					beq $t4, 6, columnfull
+					# if counter < 7, keep looping
+					# if counter == 7, error msg and break loop
+					beq $t4, 7, columnfull
 						j checkempty
 					
 					columnfull:
