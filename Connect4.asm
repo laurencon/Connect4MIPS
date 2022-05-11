@@ -4,7 +4,7 @@
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
 # $s2	board array address
-# $s3	board array address - row major order
+# $s3	----
 # $s4 	player 1 or 2
 # $s5	total moves made counter
 # $t0=x, $t1=y, $t2=color
@@ -25,7 +25,6 @@ Table:
 heap: .word 0x10040000
 
 array: 		.word 	0:42 # 0=empty 1=player1, 2=player2
-rowmajor:	.word 	0:42 # 0=empty 1=player1, 2=player2
 
 columns: 	.word 7 #$s7
 rows: 		.word 6 #$s6
