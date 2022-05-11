@@ -1,10 +1,14 @@
-# Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras
+# Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras, Leonard Woo
 # CS 2640 Final Project
 # Welcome to our final project, Connect 4!
-#$s0 register for heap address
-#$s1 for heap constant 0x10040000
-#$t0=x, $t1=y, $t2=color
-#$t6=matrixcounter $t3=displaycounter
+# $s0 register for heap address
+# $s1 for heap constant 0x10040000
+# $s2	board array address
+# $s3	win array address
+# $s4 	player 1 or 2
+# $s5	total moves made counter
+# $t0=x, $t1=y, $t2=color
+# $t6=matrixcounter $t3=displaycounter
 
 #unitwidth = 8
 #w/h = 512
@@ -47,8 +51,6 @@ main:
 	jal drawbackground
 	jal DrawGrid
 	
-	jal drawTheChecker
-	
  	#convert the x and y and store it in matrix counter
  	la $s6,rows
  	lw $s6,0($s6)
@@ -66,9 +68,13 @@ main:
 	syscall
 	
 	j userinput
-	j exit
-
+	
 userinput:
+# checks if the playervalue ($s4) is 0/1/2 then switches the player turn
+# then prompts the player to choose the column number
+# checks for valid column # and if column is not full
+# writes the playervalue to the array and exits
+	# temporary registers used. values not saved.
 	# t4 counter
 	# t7 temp value
 	# t8 address of board element
@@ -90,19 +96,17 @@ userinput:
 			la $t2, player1color
 			lw $t2, 0($t2)
 			
-			#li $t2, 0xFF0000
 			j promptinput
 	
 		player2:
 			li $s4, 2
 			la $a0, msg6
 			li $v0, 4
+			syscall
 			
 			#load player1 color into $t2
 			la $t2, player2color
-			lw $t2, 0($t2)
-			
-			syscall
+			lw $t2, 0($t2)		
 		
 	promptinput:
 		la $a0, msg2
@@ -130,54 +134,36 @@ userinput:
 			# save column to x ($t0)
 			la $t0, ($t9)
 		
-			# find array index of the first element in specified column
-			mul $t9, $t9, 6
-			sub $t9, $t9, 6
-			# multiply index by 4
-			mul $t9, $t9, 4
-	
-			# get address of array element
-			add $t8, $s2, $t9
-
 			# ! counter iterator
 			li $t4, 0
 
 		checkempty:
 			# load value of array index
-			lw $t7, ($t8)
+				move $a1,$t0
+				move $a2,$t1
+				
+				subi $a1,$a1,1
+				
+				jal convertarray
+				lw $t7, ($t8)
 	
 			# if element is 0, store user number in array
-			bne $t7, 0 , nextelement
-			
+				bne $t7, 0 , nextelement
+				
 				# if there is an empty spot in the column:	
 				# stores player value 1 or 2 into array.
 				sw $s4, ($t8)
 				# stores the (counter value + 1) as y value to $t1
 				add $t1, $t4, 1
 				
-				li $v0,1
-				move $a0, $t0
-				syscall
-				move $a0, $t1
-				syscall
-				
-				move $a1,$t0
-				move $a2,$t1
-				
-				subi $a1,$a1,1
-				subi $a2,$a2,0
-				
-				mul $a2,$a2,-1
-				addi $a2,$a2,6
-				
-				j drawTheChecker
-				
-				# !!! SUCCESSFUL EXIT JUMP !!!
+				# !!! exit jump !!!
 				# Determines where the function jumps to on success
-				j checkforwin
+				jal drawTheChecker
+				#jal CheckForWin
+				j userinput
 		
 				nextelement:
-					add $t8, $t8, 4
+					add $t8, $t8, -6
 					add $t4, $t4, 1
 					
 					# if counter < 6, keep looping
@@ -190,6 +176,8 @@ userinput:
 						li $v0, 4
 						syscall
 						j collectinput
+						
+
 
 drawTheChecker:
 	addi $sp,$sp,-4
@@ -208,9 +196,11 @@ drawTheChecker:
 	addi $sp,$sp, 4
 	jr $ra
 
+# placeholder checkforwin
+
 checkforwin:
 	j userinput
-	j exit
+	# j exit
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
@@ -269,7 +259,14 @@ drawsquare:
 	lw $ra,0($sp)
 	addi $sp,$sp, 4
 	jr $ra
+convertarray:
+	mul $t8,$a2,7
+	add $t8,$t8,$a1
+	
+	mul $t8,$t8,4
+	add $t8,$t8,$s2
 
+	jr $ra
 convert2dto1d:
 	mul $t7,$t5,64
 	add $t7,$t7,$t4
@@ -326,103 +323,116 @@ CheckForWin:
 	# 2. Horizontal
 	# 3. Diagonal (including positive and negative slope)
 	# $t2 = 4, how many tokens we need to WIN
+	li $t0, 0 #initializing a
+	li $t1, 0 # initializing b
+	li $t2, 4 # $t2 = 4
+	li $a1, 2 # $a1 = 2
+	lw $s6, rows
+	lw $s7, columns
 	
-	li $t0, 0 #initializing i
-	li $t1, 0
-	li $t2, 4
-	li $a1, 2
+	
+	
 	loopa:
-		bge $t0, $s6, ContinueChecking
-		li $t1, 0 # initializing j
+		bge $t0, $s6, ContinueChecking # if a is >= than row than branch
+		li $t1, 0 # initializing b
 		
 		loopb:
-			bge $t1, $s7, loopaContinued
-			li $t4, 0 #initializing k
-			li $t8, 0
-			li $t9, 0
-			li $t5, 0
-			li $t3, 0
-			
-			
+			bge $t1, $s7, loopaContinued # if b >= columns than branch
+			li $t4, 0 #initializing c
+			li $t8, 0 #incrementing for vertical
+			li $t9, 0 #incrementing for horizontal
+			li $t5, 0 #incrementing for positive
+			li $t3, 0 #incrementing for negative
+	
 			loopc:
-				bge $t4, $t2, CheckFor4
-				add $s5, $t1, $t4 # $s5 = j + k
-				add $s3, $t0, $t4 # $s3 = i + k
-				sub $t7, $t1, $t4 # $t7 = j - k
+				bge $t4, $t2, CheckFor4 # if c >= 4 than branch
+				add $s5, $t1, $t4 # $s5 = b + c
+				add $s3, $t0, $t4 # $s3 = a + c
+				sub $t7, $t1, $t4 # $t7 = b - c
 		
-				#value of array [i][j] = $t6
+				# value of array [a][b] = $t6
+				# $s6 = rows
 				# $s7 = columns ,from beginning of code
-				# $s0 = base add
-				# $s4 = the number of player (1 or 2) may change later depending on how input is stored :)
-				
-				VerticalWin:
-					bge $t0, $a1, DiagonalPositiveWin
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
-					add $t6, $t6, $t1
-					add $t6, $s0, $t6 
-					lb $t6, 0($t6)
-					
-					#insert code for argument if the array [i +k] [j] is not equal then go to HorizontalWin
-					bne $t6, $s4, DiagonalPositiveWin
-					addi $t8, $t8, 1
-					
+				# $s2 = base add
+				# $s4 = the number of player (1 or 2) 
 				HorizontalWin:
-					bge $t1, $t2, VerticalWin
-					mul $t6, $t0, $s7 # $t6 = i * columns
+					bge $t1, $t2, VerticalWin # if b >= 4 than branch
+					mul $t6, $t0, $s7 # $t6 = a * columns
 					add $t6, $t6, $s5
-					add $t6, $s0, $t6 
-					lb $t6, 0($t6)
+						
+					mul $t6,$t6,4
+					add $t6,$t6,$s2
+				
+					lw $t6, 0($t6)
 					
-					#insert code for argument if the array [i] [j + k] is not equal then go to DiagonalPositiveWin
+					# if the array [a] [b + c] is not equal then go to vertical
 					bne $t6, $s4, VerticalWin
 					addi $t9, $t9, 1
 					
-				DiagonalPositiveWin:
-					bge $t0, $a1, DiagonalNegativeWin
-					bge $t1, $t2, DiagonalNegativeWin
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
-					add $t6, $t6, $s5
-					add $t6, $s0, $t6 
-					lb $t6, 0($t6)
+				VerticalWin:
+					bge $t0, $a1, DiagonalPositiveWin # if a >= 2 then branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
+					add $t6, $t6, $t1
 					
-					#insert code for argument if the array [i +k] [j + k] is not equal then go to DiagonalNegativeWin
+					mul $t6,$t6,4
+					add $t6,$t6,$s2
+				
+					lw $t6, 0($t6)
+				
+					
+					# if the array [a + c] [b] is not equal then go to HorizontalWin
+					bne $t6, $s4, DiagonalPositiveWin
+					addi $t8, $t8, 1
+					
+				
+				DiagonalPositiveWin:
+					bge $t0, $a1, DiagonalNegativeWin # if a >= 2 than branch
+					bge $t1, $t2, DiagonalNegativeWin # if b >= 4 than branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
+					add $t6, $t6, $s5 
+					
+					mul $t6,$t6,4
+					add $t6,$t6,$s2
+				
+					lw $t6, 0($t6)
+					
+					# if the array [a +c] [b + c] is not equal then go to DiagonalNegativeWin
 					bne $t6, $s4, DiagonalNegativeWin
 					addi $t5, $t5, 1
 					
 				DiagonalNegativeWin:
-					bge $t0, $a1, loopcContinued
-					ble $t1, $a1, loopcContinued
-					mul $t6, $s3, $s7 # $t6 = (i+k) * columns
+					bge $t0, $a1, loopcContinued # if a >= 2 than branch
+					ble $t1, $a1, loopcContinued # if b <= 2 than branch
+					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
 					add $t6, $t6, $t7
-					add $t6, $s0, $t6 
-					lb $t6, 0($t6)
 					
-					#insert code for argument if the array [i + k] [j - k] is not equal then go to HorizontalWin
+					mul $t6,$t6,4
+					add $t6,$t6,$s2
+				
+					lw $t6, 0($t6)
+					# if the array [i + k] [j - k] is not equal then go to HorizontalWin
 					bne $t6, $s4, loopcContinued
 					addi $t3, $t3, 1
+					
+					loopcContinued:
+						addi $t4, $t4, 1
+						j loopc
+		
 			CheckFor4:
 				beq $t8, $t2, Winner 
 				beq $t9, $t2, Winner
 				beq $t5, $t2, Winner
 				beq $t3, $t2, Winner
-				
-				# if none of these statements are true then we need to conclude with a tie
-			ContinueChecking:
-				
-				jr $ra
-		
-				
-	loopaContinued:
-		addi $t0, $t0, 1
-		j loopa
-		
-		loopbContinued:
-			addi $t1, $t1, 0
-			j loopb
+				addi $t1, $t1, 1
+		loopaContinued:
+			addi $t0, $t0, 1
+			j loopa
 			
-			loopcContinued:
-				addi $t4, $t4, 1
-				j loopc
+				
+	# if none of these statements are true then we need to conclude with a tie
+	ContinueChecking:
+				
+		jr $ra
 			
 CheckForTie:
 	li $s4, 0
