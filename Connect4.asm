@@ -4,11 +4,11 @@
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
 # $s2	board array address
-# $s3	win array address
+# $s3	----
 # $s4 	player 1 or 2
 # $s5	total moves made counter
 # $t0=x, $t1=y, $t2=color
-# $t6=matrixcounter $t3=displaycounter
+# $t6=matrixcounter
 
 #unitwidth = 8
 #w/h = 512
@@ -24,9 +24,8 @@ Table:
 
 heap: .word 0x10040000
 
-array: .word 0:42 # 0=empty 1=player1, 2=player2
-columns: .word 7 #$s7
-rows: .word 6 #$s6
+columns: 	.word 7 #$s7
+rows: 		.word 6 #$s6
        msg1: .asciiz "\nWelcome to our game Connect 4!"
        msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
        msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
@@ -44,8 +43,13 @@ rows: .word 6 #$s6
        msg15: .asciiz "Column is full, please try another column: " 
        newl: .asciiz "\n"
        space: .asciiz " "
+
+array: 		.word 	0:42 # 0=empty 1=player1, 2=player2
+
 .text
 main:
+	li $s3,0
+
 	la $s2, array
 	lw $s1, heap
 	jal drawbackground
@@ -58,6 +62,7 @@ main:
  	lw $s7,0($s7)
  	li $t0,0
  	li $t1,0
+ 	li $v1,4
  	
 	la $a0, msg1 # Displaying all welcome messages to introduce the game to player
 	li $v0, 4
@@ -76,6 +81,7 @@ userinput:
 # writes the playervalue to the array and exits
 	# temporary registers used. values not saved.
 	# t4 counter
+	# t6 address of row major board element
 	# t7 temp value
 	# t8 address of board element
 	# t9 temp value
@@ -96,6 +102,7 @@ userinput:
 			la $t2, player1color
 			lw $t2, 0($t2)
 			
+			#li $t2, 0xFF0000
 			j promptinput
 	
 		player2:
@@ -133,42 +140,95 @@ userinput:
 		checkcolumn:
 			# save column to x ($t0)
 			la $t0, ($t9)
+			# ! counter iterator 
+			li $t4, 1
 		
-			# ! counter iterator
-			li $t4, 0
+			# find array index of the first element in specified column
+			#mul $t9, $t9, 6
+			#sub $t9, $t9, 6
+			# multiply index by 4
+			#mul $t9, $t9, 4
+			# get address of array element
+			#add $t8, $s2, $t9
+			
+			# rowmajor index = (6-y)*7+x-1
+			li $t7, 6		# $t7 = 6
+			sub $t9, $t7, $t4	# 6 - y
+			mul $t9, $t9, 7		# *7
+			add $t9, $t9, $t0	# +x
+			sub $t9, $t9, 1		# +1
+			mul $t9, $t9, 4
+			# get address of array element
+			add $t8, $s2, $t9
 
 		checkempty:
 			# load value of array index
+			lw $t7, ($t8)
+	
+			# if element is 0, store user number in array
+			bne $t7, 0 , nextelement
+			
+				# if there is an empty spot in the column:	
+				# stores player value 1 or 2 into array.
+				sw $s4, ($t8)
+				# ! CHANGED ! stores the (counter value + 1) as y value to $t1
+				#add $t1, $t4, 1
+				# stores counter value as y value to $t1
+				la $t1, ($t4)
+				
+				#writetorowmajor:
+				# rowmajor index = (6-y)*7+x-1
+					li $t7, 6		# $t7 = 6
+					sub $t9, $t7, $t1
+					mul $t9, $t9, 7
+					add $t9, $t9, $t0
+					sub $t9, $t9, 1
+					
+					# add to index of non-row-order array instead. conflicts with $s3
+					add $t9, $t9, 42
+					
+					# multiply index by 4 
+					mul $t9, $t9, 4
+					# get address in rowmajor array
+					# add $t6, $s3, $t9	
+					add $t6, $s2, $t9
+						
+					sw $s4, ($t6)
+
 				move $a1,$t0
 				move $a2,$t1
 				
 				subi $a1,$a1,1
+				subi $a2,$a2,0
 				
-				jal convertarray
-				lw $t7, ($t8)
-	
-			# if element is 0, store user number in array
-				bne $t7, 0 , nextelement
-				
-				# if there is an empty spot in the column:	
-				# stores player value 1 or 2 into array.
-				sw $s4, ($t8)
-				# stores the (counter value + 1) as y value to $t1
-				add $t1, $t4, 1
+				mul $a2,$a2,-1
+				addi $a2,$a2,6
 				
 				# !!! exit jump !!!
 				# Determines where the function jumps to on success
+				addi $sp,$sp,-8
+				
+				sw $a1,0($sp)
+				sw $a2,4($sp)
+				
 				jal drawTheChecker
-				#jal CheckForWin
+				
+				lw $a1,0($sp)
+				lw $a2,4($sp) 
+				addi $sp,$sp,8
+				
+				addi $s3,$s3,1
+				jal CheckForWin
 				j userinput
 		
 				nextelement:
-					add $t8, $t8, -6
+					#add $t8, $t8, 4
+					sub $t8, $t8, 28
 					add $t4, $t4, 1
 					
-					# if counter < 6, keep looping
-					# if counter == 6, error msg and break loop
-					beq $t4, 6, columnfull
+					# if counter < 7, keep looping
+					# if counter == 7, error msg and break loop
+					beq $t4, 7, columnfull
 						j checkempty
 					
 					columnfull:
@@ -176,8 +236,6 @@ userinput:
 						li $v0, 4
 						syscall
 						j collectinput
-						
-
 
 drawTheChecker:
 	addi $sp,$sp,-4
@@ -196,11 +254,338 @@ drawTheChecker:
 	addi $sp,$sp, 4
 	jr $ra
 
-# placeholder checkforwin
+#$a1 - x
+#$a2 - y
+#$s7 - cols
+#$v0 - return value of linear index
+convert2dto1darray:
+	addi $sp,$sp,-4
+	sw $ra, 0($sp)
 
-checkforwin:
-	j userinput
-	# j exit
+	mul $v0, $a2, $s7
+	add $v0, $v0, $a1
+	mul $v0, $v0, 4
+
+	add $v0, $v0, $s2
+	
+	lw $ra, 0($sp)
+	
+	addi $sp,$sp,4
+	jr $ra
+
+#$a1 - x
+#$a2 - y
+#$s7 - cols
+
+#$t3 - cx
+#$t5 - cy
+#$t6 - cx1
+#$s0 - cy1
+
+#$v0 - return value of linear index
+checktopbot:
+	addi $sp,$sp,-12
+	sw $ra, 0($sp)
+	sw $a1, 4($sp) #x
+	sw $a2, 8($sp) #y
+	
+	move $t3,$a1
+	move $t5,$a2
+	
+	move $t6,$a1
+	move $s0,$a2
+
+	checktopbotloop1:
+		blt $t5,$0,checktopbotloop2
+	
+		move $a1,$t3
+		move $a2,$t5
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+
+		beq $v0,$0,checktopbotloop2
+		bne $v0,$s4,checktopbotloop2
+	
+		addi $t5,$t5,-1
+		j checktopbotloop1
+
+	checktopbotloop2:
+		bge $s0,$s6,checktopbotend
+	
+		move $a1,$t6
+		move $a2,$s0
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+	
+		beq $v0,$0,checktopbotend
+		bne $v0,$s4,checktopbotend
+	
+		addi $s0,$s0,1
+		j checktopbotloop2
+
+	checktopbotend:
+		move $v0, $s0
+		sub $v0, $v0, $t5
+		addi $v0, $v0, -1
+	
+	#vo - return value
+	
+	lw $ra, 0($sp)
+	lw $a1, 4($sp) #x
+	lw $a2, 8($sp) #y
+	
+	addi $sp,$sp,12
+	jr $ra
+#$a1 - x
+#$a2 - y
+#$s7 - cols
+
+#$t3 - cx
+#$t5 - cy
+#$t6 - cx1
+#$s0 - cy1
+
+#$v0 - return value of linear index
+checkleftright:
+
+	addi $sp,$sp,-12
+	sw $ra, 0($sp)
+	sw $a1, 4($sp) #x
+	sw $a2, 8($sp) #y
+	
+	move $t3,$a1
+	move $t5,$a2
+	
+	move $t6,$a1
+	move $s0,$a2
+
+	checkleftrightloop1:
+		blt $t3,$0,checkleftrightloop2
+	
+		move $a1,$t3
+		move $a2,$t5
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+
+		beq $v0,$0,checkleftrightloop2
+		bne $v0,$s4,checkleftrightloop2
+	
+		addi $t3,$t3,-1
+		j checkleftrightloop1
+
+	checkleftrightloop2:
+		bge $s6,$s7,checkleftrightend
+	
+		move $a1,$t6
+		move $a2,$s0
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+	
+		beq $v0,$0,checkleftrightend
+		bne $v0,$s4,checkleftrightend
+	
+		addi $t6,$t6,1
+		j checkleftrightloop2
+
+	checkleftrightend:
+		move $v0, $t6
+		sub $v0, $v0, $t3
+		addi $v0, $v0, -1
+	
+	#vo - return value
+	
+	lw $ra, 0($sp)
+	lw $a1, 4($sp) #x
+	lw $a2, 8($sp) #y
+	
+	addi $sp,$sp,12
+	jr $ra
+#$a1 - x
+#$a2 - y
+#$s7 - cols
+
+#$t3 - cx
+#$t5 - cy
+#$t6 - cx1
+#$s0 - cy1
+
+#$v0 - return value of linear index
+checkfordiag:
+addi $sp,$sp,-12
+	sw $ra, 0($sp)
+	sw $a1, 4($sp) #x
+	sw $a2, 8($sp) #y
+	
+	move $t3,$a1
+	move $t5,$a2
+	
+	move $t6,$a1
+	move $s0,$a2
+
+	checkdiag1:
+		blt $t3,$0,checkdiag2
+		bge $t5,$s6,checkdiag2
+		move $a1,$t3
+		move $a2,$t5
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+
+		beq $v0,$0,checkdiag2
+		bne $v0,$s4,checkdiag2
+	
+		addi $t3,$t3,-1
+		addi $t5,$t5, 1
+		j checkdiag1
+
+	checkdiag2:
+		bge $t6,$s7,checkdiagend
+		blt $s0,$0,checkdiagend
+		move $a1,$t6
+		move $a2,$s0
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+	
+		beq $v0,$0,checkdiagend
+		bne $v0,$s4,checkdiagend
+	
+		addi $t6,$t6,1
+		addi $s0,$s0,-1
+		j checkdiag2
+
+	checkdiagend:
+		move $v0, $t6
+		sub $v0, $v0, $t3
+		addi $v0, $v0, -1
+	
+	#vo - return value
+	
+	lw $ra, 0($sp)
+	lw $a1, 4($sp) #x
+	lw $a2, 8($sp) #y
+	
+	addi $sp,$sp,12
+	jr $ra
+#$a1 - x
+#$a2 - y
+#$s7 - cols
+
+#$t3 - cx
+#$t5 - cy
+#$t6 - cx1
+#$s0 - cy1
+
+#$v0 - return value of linear index
+checkbackdiag:
+	addi $sp,$sp,-12
+	sw $ra, 0($sp)
+	sw $a1, 4($sp) #x
+	sw $a2, 8($sp) #y
+	
+	move $t3,$a1
+	move $t5,$a2
+	
+	move $t6,$a1
+	move $s0,$a2
+
+	checkbackdiag1:
+		bge $t3,$s7,checkbackdiag2
+		bge $t5,$s6,checkbackdiag2
+		move $a1,$t3
+		move $a2,$t5
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+
+		beq $v0,$0,checkbackdiag2
+		bne $v0,$s4,checkbackdiag2
+	
+		addi $t3,$t3,1
+		addi $t5,$t5, 1
+		j checkbackdiag1
+
+	checkbackdiag2:
+		blt $t6,$0,checkbackdiagend
+		blt $s0,$0,checkbackdiagend
+		move $a1,$t6
+		move $a2,$s0
+		jal convert2dto1darray	#$v0 - player id
+	
+		lw $v0, 0($v0)
+	
+		beq $v0,$0,checkbackdiagend
+		bne $v0,$s4,checkbackdiagend
+	
+		addi $t6,$t6,-1
+		addi $s0,$s0,-1
+		j checkbackdiag2
+
+	checkbackdiagend:
+		move $v0, $t6
+		sub $v0, $v0, $t3
+		mul $v0,$v0,-1
+		addi $v0, $v0, -1
+	
+	#vo - return value
+	
+	lw $ra, 0($sp)
+	lw $a1, 4($sp) #x
+	lw $a2, 8($sp) #y
+	
+	addi $sp,$sp,12
+	jr $ra
+#$a1 - x
+#$a2 - y
+#$s4 - player number
+#$s6 - rows
+#$s7 - cols
+#$s2 - array
+CheckForWin:
+	addi $sp,$sp,-4
+	sw $ra, 0($sp)
+
+	jal checktopbot
+	move $a0,$s4
+	bge $v0,$v1, Winner1
+	jal checkleftright
+	bge $v0,$v1, Winner1
+	jal checkfordiag
+	bge $v0,$v1, Winner1
+	jal checkbackdiag
+	bge $v0,$v1, Winner1
+	
+	beq $s3,42,Tie
+
+	lw $ra, 0($sp)
+	addi $sp,$sp,4
+	jr $ra
+
+Winner1:
+    beq $a0, 2, Winner2
+    la $a0, msg9
+    li $v0, 4
+    syscall
+    
+    j exit
+
+Winner2:
+        la $a0, msg10
+        li $v0, 4
+        syscall
+        
+        j exit
+
+Tie:     
+	la $a0, msg11
+	li $v0, 4
+	syscall
+ 	j exit
+
 drawbackground:	
 	lw $s0, heap
 	li $t2, 0x0000FF
@@ -255,17 +640,9 @@ drawsquare:
 			beq $t0,$a3,yloopexit
 			j yloop
 		yloopexit:
-		
+
 	lw $ra,0($sp)
 	addi $sp,$sp, 4
-	jr $ra
-convertarray:
-	mul $t8,$a2,7
-	add $t8,$t8,$a1
-	
-	mul $t8,$t8,4
-	add $t8,$t8,$s2
-
 	jr $ra
 convert2dto1d:
 	mul $t7,$t5,64
@@ -283,8 +660,8 @@ DrawGrid:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
 	li $t8, 0
-	li $a3,8
-	li $t2,0xffffff
+	li $a3, 8
+	li $t2, 0xffffff
 	gridloop:#iterates through the matrix
  		gridloop1:
  			li $t9, 0
@@ -307,7 +684,7 @@ DrawGrid:
 			beq $t9,7,gridexit1
 			
 			j gridloop2
-		gridexit1: 
+		gridexit1:
 			addi $t8,$t8,1
 			beq $t8,6,gridexit2
 			j gridloop1
@@ -317,169 +694,6 @@ DrawGrid:
 	addi $sp,$sp, 4
 	jr $ra
 
-CheckForWin:
-	# Connect 4 has 3 possible ways to win
-	# 1. Vertical
-	# 2. Horizontal
-	# 3. Diagonal (including positive and negative slope)
-	# $t2 = 4, how many tokens we need to WIN
-	li $t0, 0 #initializing a
-	li $t1, 0 # initializing b
-	li $t2, 4 # $t2 = 4
-	li $a1, 2 # $a1 = 2
-	lw $s6, rows
-	lw $s7, columns
-	
-	
-	
-	loopa:
-		bge $t0, $s6, ContinueChecking # if a is >= than row than branch
-		li $t1, 0 # initializing b
-		
-		loopb:
-			bge $t1, $s7, loopaContinued # if b >= columns than branch
-			li $t4, 0 #initializing c
-			li $t8, 0 #incrementing for vertical
-			li $t9, 0 #incrementing for horizontal
-			li $t5, 0 #incrementing for positive
-			li $t3, 0 #incrementing for negative
-	
-			loopc:
-				bge $t4, $t2, CheckFor4 # if c >= 4 than branch
-				add $s5, $t1, $t4 # $s5 = b + c
-				add $s3, $t0, $t4 # $s3 = a + c
-				sub $t7, $t1, $t4 # $t7 = b - c
-		
-				# value of array [a][b] = $t6
-				# $s6 = rows
-				# $s7 = columns ,from beginning of code
-				# $s2 = base add
-				# $s4 = the number of player (1 or 2) 
-				HorizontalWin:
-					bge $t1, $t2, VerticalWin # if b >= 4 than branch
-					mul $t6, $t0, $s7 # $t6 = a * columns
-					add $t6, $t6, $s5
-						
-					mul $t6,$t6,4
-					add $t6,$t6,$s2
-				
-					lw $t6, 0($t6)
-					
-					# if the array [a] [b + c] is not equal then go to vertical
-					bne $t6, $s4, VerticalWin
-					addi $t9, $t9, 1
-					
-				VerticalWin:
-					bge $t0, $a1, DiagonalPositiveWin # if a >= 2 then branch
-					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
-					add $t6, $t6, $t1
-					
-					mul $t6,$t6,4
-					add $t6,$t6,$s2
-				
-					lw $t6, 0($t6)
-				
-					
-					# if the array [a + c] [b] is not equal then go to HorizontalWin
-					bne $t6, $s4, DiagonalPositiveWin
-					addi $t8, $t8, 1
-					
-				
-				DiagonalPositiveWin:
-					bge $t0, $a1, DiagonalNegativeWin # if a >= 2 than branch
-					bge $t1, $t2, DiagonalNegativeWin # if b >= 4 than branch
-					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
-					add $t6, $t6, $s5 
-					
-					mul $t6,$t6,4
-					add $t6,$t6,$s2
-				
-					lw $t6, 0($t6)
-					
-					# if the array [a +c] [b + c] is not equal then go to DiagonalNegativeWin
-					bne $t6, $s4, DiagonalNegativeWin
-					addi $t5, $t5, 1
-					
-				DiagonalNegativeWin:
-					bge $t0, $a1, loopcContinued # if a >= 2 than branch
-					ble $t1, $a1, loopcContinued # if b <= 2 than branch
-					mul $t6, $s3, $s7 # $t6 = (a+c) * columns
-					add $t6, $t6, $t7
-					
-					mul $t6,$t6,4
-					add $t6,$t6,$s2
-				
-					lw $t6, 0($t6)
-					# if the array [i + k] [j - k] is not equal then go to HorizontalWin
-					bne $t6, $s4, loopcContinued
-					addi $t3, $t3, 1
-					
-					loopcContinued:
-						addi $t4, $t4, 1
-						j loopc
-		
-			CheckFor4:
-				beq $t8, $t2, Winner 
-				beq $t9, $t2, Winner
-				beq $t5, $t2, Winner
-				beq $t3, $t2, Winner
-				addi $t1, $t1, 1
-		loopaContinued:
-			addi $t0, $t0, 1
-			j loopa
-			
-				
-	# if none of these statements are true then we need to conclude with a tie
-	ContinueChecking:
-				
-		jr $ra
-			
-CheckForTie:
-	li $s4, 0
-	li $t0, 0
-	
-	loopaTie:
-		bge $t0, $s6, Tie
-		li $t1, 0
-		
-		loopbTie:
-			bge $t1, $s7, continuedTie
-			mul $t6, $t0, $s7
-			add $t6, $t6, $t1
-			add $t6, $s0, $t6
-			lb $t6, 0($t6)
-			
-			beq $t6, $s4, exitNoTie
-			addi $t1, $t1, 1
-			j loopbTie
-			
-	continuedTie:
-		addi $t0, $t0, 1
-		j loopaTie
-			
-	exitNoTie:
-		jr $ra
-				
-				
-				
-Tie: 	la $a0, msg11
-	li $v0, 4
-	syscall
-	li $v0, 10
-	syscall
-Winner:
-	beq $a0, 1 Winner2
-	la $a0, msg9
-	li $v0, 4
-	syscall
-	
-	Winner2:
-		la $a0, msg10
-		li $v0, 4
-		syscall
-		li $v0, 10
-		syscall
-	
 exit:
 	li $v0,10
 	syscall
