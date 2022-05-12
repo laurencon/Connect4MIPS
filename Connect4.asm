@@ -3,14 +3,13 @@
 # Welcome to our final project, Connect 4!
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
-# $s2	board array address
-# $s3	tiles placed
-# $s4 	player 1 or 2
-# $t0=x, $t1=y, $t2=color
+# $s2 board array address
+# $s3 tiles placed
+# $s4 player 1 or 2
 
 #unitwidth = 8
-#w/h = 512
-#actual w/h = 512 / 8 = 64
+#w / h = 512
+#actual w / h = 512 / 8 = 64
 
 .data
 player1color: .word 0xFF0000 # Red Chip - Player 1
@@ -18,10 +17,10 @@ player2color: .word 0xFFFF00 # Yellow Chip - Player 2
 background: .word 0x0000FF #grid color
 basecolor: .word 0xbbbbbb #base color
 
-heap: .word 0x10040000
+heap: .word 0x10040000 #heap base address
 
-columns: 	.word 7 #$s7
-rows: 		.word 6 #$s6
+columns: 	.word 7 # $s7
+rows: 		.word 6 # $s6
        msg1: .asciiz "\nWelcome to our game Connect 4!"
        msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
        msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
@@ -40,7 +39,7 @@ rows: 		.word 6 #$s6
        newl: .asciiz "\n"
        space: .asciiz " "
 
-array: 	.word 	0:42 # 0=empty 1=player1, 2=player2
+array: 	.word 	0:42 # 0 = empty 1 = player1, 2 = player2
 
 .text
 main:
@@ -192,6 +191,7 @@ userinput:
 				
 				mul $a2,$a2,-1
 				addi $a2,$a2,6
+				#store x and y into a1 and a2, a1 and a2 need to be 0 transformed
 				
 				# !!! exit jump !!!
 				# Determines where the function jumps to on success
@@ -201,14 +201,15 @@ userinput:
 				sw $a2,4($sp)
 				
 				jal drawTheChecker
+				#draws checker
 				
 				lw $a1,0($sp)
 				lw $a2,4($sp) 
 				addi $sp,$sp,8
 				
 				addi $s3,$s3,1
-				jal CheckForWin
-				j userinput
+				jal CheckForWin #checks for possible win condition				
+				j userinput #user input again
 		
 				nextelement:
 					#add $t8, $t8, 4
@@ -234,9 +235,11 @@ drawTheChecker:
 	
 	mul $a1,$a1,9
 	mul $a2,$a2,9
-			
+	#multiply by (8 + 1) or 1 pixel gap between each checker
+
 	addi $a1,$a1,1
 	addi $a2,$a2,1
+	#To draw squares beginning past 1 pixel
 		
 	jal drawsquare
 	lw $ra,0($sp)
@@ -253,9 +256,13 @@ convert2dto1darray:
 
 	mul $v0, $a2, $s7
 	add $v0, $v0, $a1
+	#converting 2d to 1d
+		
 	mul $v0, $v0, 4
+	#multiply by 4 to align with word
 
 	add $v0, $v0, $s2
+	#add base address of array
 	
 	lw $ra, 0($sp)
 	
@@ -271,12 +278,40 @@ convert2dto1darray:
 #$t6 - cx1
 #$s0 - cy1
 
-#$v0 - return value of linear index
+#$v0 - return count of consecutive tiles
+
+#int checktop_bot(int arr[],int rows, int columns, int x, int y)
+#{
+#	int cx ,cy;
+#   
+#	for(cx =x,cy = y; cy>=0;cy--)
+#	{
+#		if(arr[convertytold(cx,cy,columns)] != arr[convertytold(x,y,columns)]||arr[convertytold(cx,cy,columns)]==0)
+#		{
+#			break;
+#		}
+#	}
+#	int cx1,cy1;
+#	for(cx1 =x,cy1 = y; cy1<rows;cy1++)
+#	{
+#		if(arr[convertytold(cx1,cy1,columns)] != arr[convertytold(x,y,columns)]||arr[convertytold(cx1,cy1,columns)]==0)
+#		{
+#			break;
+#		}
+#	}
+    
+    
+#	return (cy1-cy)-1;
+#}
+
+#EXAMPLE C CODE TO CHECK VERTICAL WINS
+#SIMILAR CODE IN CHECKTOPBOT LABEL
+
 checktopbot:
 	addi $sp,$sp,-12
 	sw $ra, 0($sp)
-	sw $a1, 4($sp) #x
-	sw $a2, 8($sp) #y
+	sw $a1, 4($sp) #store x
+	sw $a2, 8($sp) #store y
 	
 	move $t3,$a1
 	move $t5,$a2
@@ -319,11 +354,9 @@ checktopbot:
 		sub $v0, $v0, $t5
 		addi $v0, $v0, -1
 	
-	#vo - return value
-	
 	lw $ra, 0($sp)
-	lw $a1, 4($sp) #x
-	lw $a2, 8($sp) #y
+	lw $a1, 4($sp) #restore x to a1
+	lw $a2, 8($sp) #restore y to a2
 	
 	addi $sp,$sp,12
 	jr $ra
@@ -335,8 +368,8 @@ checktopbot:
 #$t5 - cy
 #$t6 - cx1
 #$s0 - cy1
-
-#$v0 - return value of linear index
+#$v0 - return count of consecutive tiles
+# SIMILAR CODE TO TOPBOTTOM
 checkleftright:
 
 	addi $sp,$sp,-12
@@ -400,7 +433,8 @@ checkleftright:
 #$t6 - cx1
 #$s0 - cy1
 
-#$v0 - return value of linear index
+#$v0 - return count of consecutive tiles
+#similar code to TOP BOTTOM
 checkfordiag:
 addi $sp,$sp,-12
 	sw $ra, 0($sp)
@@ -465,7 +499,8 @@ addi $sp,$sp,-12
 #$t6 - cx1
 #$s0 - cy1
 
-#$v0 - return value of linear index
+#$v0 - return count of consecutive tiles
+#similar code to TOP BOTTOM
 checkbackdiag:
 	addi $sp,$sp,-12
 	sw $ra, 0($sp)
@@ -522,12 +557,14 @@ checkbackdiag:
 	
 	addi $sp,$sp,12
 	jr $ra
+
 #$a1 - x
 #$a2 - y
 #$s4 - player number
 #$s6 - rows
 #$s7 - cols
 #$s2 - array
+
 CheckForWin:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
@@ -542,7 +579,11 @@ CheckForWin:
 	jal checkbackdiag
 	bge $v0,$v1, Winner1#if(checkforbackdiag==4)
 	
+	#if any condition wins, then jump to winner1
+	
 	beq $s3,42,Tie 
+	#also check for ties if all tiles are placed
+
 
 	lw $ra, 0($sp)
 	addi $sp,$sp,4
