@@ -4,11 +4,9 @@
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
 # $s2	board array address
-# $s3	----
+# $s3	tiles placed
 # $s4 	player 1 or 2
-# $s5	total moves made counter
 # $t0=x, $t1=y, $t2=color
-# $t6=matrixcounter
 
 #unitwidth = 8
 #w/h = 512
@@ -17,10 +15,8 @@
 .data
 player1color: .word 0xFF0000 # Red Chip - Player 1
 player2color: .word 0xFFFF00 # Yellow Chip - Player 2
-
-Table:
-       .word 0x0000FF # Blue grid
-       .word 0xFFFFFF #White background for contrast
+background: .word 0x0000FF #grid color
+basecolor: .word 0xbbbbbb #base color
 
 heap: .word 0x10040000
 
@@ -44,7 +40,7 @@ rows: 		.word 6 #$s6
        newl: .asciiz "\n"
        space: .asciiz " "
 
-array: 		.word 	0:42 # 0=empty 1=player1, 2=player2
+array: 	.word 	0:42 # 0=empty 1=player1, 2=player2
 
 .text
 main:
@@ -54,23 +50,24 @@ main:
 	lw $s1, heap
 	jal drawbackground
 	jal DrawGrid
+	#draws background and grid
 	
- 	#convert the x and y and store it in matrix counter
  	la $s6,rows
- 	lw $s6,0($s6)
+ 	lw $s6,($s6)
  	la $s7,columns
- 	lw $s7,0($s7)
+ 	lw $s7,($s7)
  	li $t0,0
  	li $t1,0
  	li $v1,4
  	
-	la $a0, msg1 # Displaying all welcome messages to introduce the game to player
+	la $a0, msg1 
 	li $v0, 4
 	syscall 
 	
 	la $a0, msg4
 	li $v0, 4
 	syscall
+	# Displaying all welcome messages to introduce the game to player
 	
 	j userinput
 	
@@ -113,7 +110,7 @@ userinput:
 			
 			#load player1 color into $t2
 			la $t2, player2color
-			lw $t2, 0($t2)		
+			lw $t2, 0($t2)
 		
 	promptinput:
 		la $a0, msg2
@@ -142,15 +139,7 @@ userinput:
 			la $t0, ($t9)
 			# ! counter iterator 
 			li $t4, 1
-		
-			# find array index of the first element in specified column
-			#mul $t9, $t9, 6
-			#sub $t9, $t9, 6
-			# multiply index by 4
-			#mul $t9, $t9, 4
-			# get address of array element
-			#add $t8, $s2, $t9
-			
+
 			# rowmajor index = (6-y)*7+x-1
 			li $t7, 6		# $t7 = 6
 			sub $t9, $t7, $t4	# 6 - y
@@ -300,7 +289,7 @@ checktopbot:
 	
 		move $a1,$t3
 		move $a2,$t5
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 
@@ -315,7 +304,7 @@ checktopbot:
 	
 		move $a1,$t6
 		move $a2,$s0
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 	
@@ -395,9 +384,7 @@ checkleftright:
 		move $v0, $t6
 		sub $v0, $v0, $t3
 		addi $v0, $v0, -1
-	
-	#vo - return value
-	
+
 	lw $ra, 0($sp)
 	lw $a1, 4($sp) #x
 	lw $a2, 8($sp) #y
@@ -431,7 +418,7 @@ addi $sp,$sp,-12
 		bge $t5,$s6,checkdiag2
 		move $a1,$t3
 		move $a2,$t5
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 
@@ -447,7 +434,7 @@ addi $sp,$sp,-12
 		blt $s0,$0,checkdiagend
 		move $a1,$t6
 		move $a2,$s0
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 	
@@ -462,8 +449,6 @@ addi $sp,$sp,-12
 		move $v0, $t6
 		sub $v0, $v0, $t3
 		addi $v0, $v0, -1
-	
-	#vo - return value
 	
 	lw $ra, 0($sp)
 	lw $a1, 4($sp) #x
@@ -498,7 +483,7 @@ checkbackdiag:
 		bge $t5,$s6,checkbackdiag2
 		move $a1,$t3
 		move $a2,$t5
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 
@@ -514,7 +499,7 @@ checkbackdiag:
 		blt $s0,$0,checkbackdiagend
 		move $a1,$t6
 		move $a2,$s0
-		jal convert2dto1darray	#$v0 - player id
+		jal convert2dto1darray
 	
 		lw $v0, 0($v0)
 	
@@ -530,8 +515,6 @@ checkbackdiag:
 		sub $v0, $v0, $t3
 		mul $v0,$v0,-1
 		addi $v0, $v0, -1
-	
-	#vo - return value
 	
 	lw $ra, 0($sp)
 	lw $a1, 4($sp) #x
@@ -588,7 +571,7 @@ Tie:
 
 drawbackground:	
 	lw $s0, heap
-	li $t2, 0x0000FF
+	lw $t2, background
 	sw $t2, 0($s0)
 	li $t0,0
 	backgroundloop:
@@ -624,8 +607,7 @@ drawsquare:
  		yloop: # yloop
  			li $t1,0
 
-		xloop: #xloop
- 			#insert code
+		xloop: # xloop
  			add $t5, $a2, $t0
  			add $t4, $a1, $t1
  			
@@ -653,20 +635,19 @@ convert2dto1d:
 	
 	jr $ra
 	
-# Time to create the basic grid]
-#s4 for white x
-#s5 for white y
+# Time to create the basic grid
+# s4 for white x
+# s5 for white y
 DrawGrid:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
 	li $t8, 0
 	li $a3, 8
-	li $t2, 0xffffff
+	lw $t2, basecolor
 	gridloop:#iterates through the matrix
  		gridloop1:
  			li $t9, 0
- 			
- 			
+
  		gridloop2:
  	 
 			move $a1,$t9
