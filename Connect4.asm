@@ -534,21 +534,22 @@ CheckForWin:
 
 	jal checktopbot
 	move $a0,$s4
-	bge $v0,$v1, Winner1
+	bge $v0,$v1, Winner1#if(checktopbot==4)
 	jal checkleftright
-	bge $v0,$v1, Winner1
+	bge $v0,$v1, Winner1#if(checkleftright==4)
 	jal checkfordiag
-	bge $v0,$v1, Winner1
+	bge $v0,$v1, Winner1#if(checkfordiag==4)
 	jal checkbackdiag
-	bge $v0,$v1, Winner1
+	bge $v0,$v1, Winner1#if(checkforbackdiag==4)
 	
-	beq $s3,42,Tie
+	beq $s3,42,Tie 
 
 	lw $ra, 0($sp)
 	addi $sp,$sp,4
 	jr $ra
 
 Winner1:
+#prints out player 1 win message
     beq $a0, 2, Winner2
     la $a0, msg9
     li $v0, 4
@@ -557,6 +558,7 @@ Winner1:
     j exit
 
 Winner2:
+#prints out player 2 win message
         la $a0, msg10
         li $v0, 4
         syscall
@@ -564,12 +566,14 @@ Winner2:
         j exit
 
 Tie:     
+#prints out tie message
 	la $a0, msg11
 	li $v0, 4
 	syscall
  	j exit
 
-drawbackground:	
+drawbackground
+#draws the blue background:	
 	lw $s0, heap
 	lw $t2, background
 	sw $t2, 0($s0)
@@ -579,10 +583,10 @@ drawbackground:
  			li $t1,0
  		backj:
  			sw $t2, 0($s0) 			
- 			addi $s0,$s0,4
+ 			addi $s0,$s0,4 
  			
 			addi $t1,$t1,1
-			beq $t1,64,backexitj
+			beq $t1,64,backexitj #loops 64x64 times to fill each pixel
 			j backj
 		backexitj: 
 			addi $t0,$t0,1
@@ -601,21 +605,22 @@ drawbackground:
 drawsquare:
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
-
+#draws a square of any given size
+#at $a1,$a2
 	li $t0,0
 	drawsquareloop:
  		yloop: # yloop
  			li $t1,0
 
 		xloop: # xloop
- 			add $t5, $a2, $t0
+ 			add $t5, $a2, $t0 
  			add $t4, $a1, $t1
  			
  			jal convert2dto1d
 			sw $t2, 0($t7)
 
 			addi $t1,$t1,1
-			beq $t1,$a3,xloopexit
+			beq $t1,$a3,xloopexit #loops $a3x$a3 times ($a3=box width) 
 			j xloop
 		xloopexit:
 			addi $t0,$t0,1
@@ -627,46 +632,43 @@ drawsquare:
 	addi $sp,$sp, 4
 	jr $ra
 convert2dto1d:
-	mul $t7,$t5,64
-	add $t7,$t7,$t4
+#converts 2d indices to 1d 
+	mul $t7,$t5,64 #muliptly by the amount of pixels
+	add $t7,$t7,$t4 #t4 is the x coordinate
 	
-	mul $t7,$t7,4
-	add $t7,$t7,$s1
+	mul $t7,$t7,4 #to align with word
+	add $t7,$t7,$s1# add the array address
 	
 	jr $ra
 	
 # Time to create the basic grid
 # s4 for white x
 # s5 for white y
-DrawGrid:
+DrawGrid: #draws the white grid
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
-	li $t8, 0
-	li $a3, 8
-	lw $t2, basecolor
-	gridloop:#iterates through the matrix
+	
+	li $t8, 0#loop counter
+	lw $t2, basecolor #color of base
+	gridloop:
  		gridloop1:
- 			li $t9, 0
+ 			li $t9, 0#loop connter
 
  		gridloop2:
  	 
 			move $a1,$t9
 			move $a2,$t8
 			
-			mul $a1,$a1,9
-			mul $a2,$a2,9
-			
-			addi $a1,$a1,1
-			addi $a2,$a2,1
+			jal drawTheChecker #draws the boxes for the grid
 			
  			jal drawsquare
  			
-			addi $t9,$t9,1
+			addi $t9,$t9,1 #increment counter
 			beq $t9,7,gridexit1
 			
 			j gridloop2
 		gridexit1:
-			addi $t8,$t8,1
+			addi $t8,$t8,1#increment counter
 			beq $t8,6,gridexit2
 			j gridloop1
 		gridexit2:
@@ -676,5 +678,5 @@ DrawGrid:
 	jr $ra
 
 exit:
-	li $v0,10
+	li $v0,10 #exits program
 	syscall
