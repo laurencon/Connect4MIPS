@@ -613,7 +613,7 @@ Tie:
 	syscall
  	j exit
 
-drawbackground
+drawbackground:
 #draws the blue background:	
 	lw $s0, heap
 	lw $t2, background
