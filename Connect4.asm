@@ -1,27 +1,27 @@
 # Group Members: Omar Suede, Abhinav Neelam, Lauren Contreras, Leonard Woo
-# CS 2640 Final Project
+# CS 2640 Final Project 
+#Date: 5/20/2022
 # Welcome to our final project, Connect 4!
+#Before running make sure 
+#to open bitmap display with these settings(unit width=8,unit height=8, display width=512, display height=512, and heap address)
+
 # $s0 register for heap address
 # $s1 for heap constant 0x10040000
 # $s2 board array address
 # $s3 tiles placed
 # $s4 player 1 or 2
 
-#unitwidth = 8
-#w / h = 512
-#actual w / h = 512 / 8 = 64
-
 .data
 player1color: .word 0xFF0000 # Red Chip - Player 1
 player2color: .word 0xFFFF00 # Yellow Chip - Player 2
 background: .word 0x0000FF #grid color
-basecolor: .word 0xbbbbbb #base color
+basecolor: .word 0xFFFFFF #base color
 
 heap: .word 0x10040000 #heap base address
 
 columns: 	.word 7 # $s7
 rows: 		.word 6 # $s6
-       msg1: .asciiz "\nWelcome to our game Connect 4!"
+       msg1: .asciiz "\nWelcome to our game Connect 4!\n"
        msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
        msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
        msg4: .asciiz "\nHave fun and good luck! :)\n"
@@ -29,13 +29,14 @@ rows: 		.word 6 # $s6
        msg6: .asciiz "\nIt's player 2's turn"
        msg7: .asciiz "Choose a number between 1-7:\n"
        msg8: .asciiz "Column is full, please choose again.\n"
-       msg9: .asciiz "The winner is player 1! Congrats!\n"
-       msg10: .asciiz "The winner is player 2! Congrats!\n"
-       msg11: .asciiz "It's a tie!\n"
+       msg9: .asciiz "\nThe winner is player 1! Congrats!\n"
+       msg10: .asciiz "\nThe winner is player 2! Congrats!\n"
+       msg11: .asciiz "\nIt's a tie!\n"
        msg12: .asciiz "The input is invalid, please enter a number from 1-7: "
        msg13: .asciiz "counter"
        msg14: .asciiz "loop\n"
        msg15: .asciiz "Column is full, please try another column: " 
+       msg16:.asciiz "\nHow to play: You need to match 4 squares of the same color horizontally, vertically or diagonally to win"
        newl: .asciiz "\n"
        space: .asciiz " "
 
@@ -63,10 +64,17 @@ main:
 	li $v0, 4
 	syscall 
 	
+	
+	
+	la $a0, msg16
+	li $v0, 4#how to play message
+	syscall
+	
 	la $a0, msg4
 	li $v0, 4
 	syscall
 	# Displaying all welcome messages to introduce the game to player
+	
 	
 	j userinput
 	
