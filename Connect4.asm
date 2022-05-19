@@ -79,9 +79,7 @@ userinput:
 # writes the playervalue to the array and exits
 	# temporary registers used. values not saved.
 	# t2 player color
-	# t3 temp
 	# t4 counter
-	# t5 temp
 	# t6 address of row major board element
 	# t7 temp
 	# t8 address of board element
@@ -124,19 +122,19 @@ userinput:
 	collectinput:
 	
 		# clear first two bits of buffer
-		la $t5, buffer	# $t5 buffer address
-		li $t3, 0
-		sb $t3, ($t5)	# store 0 into first bit of buffer	
-		sb $t3, 1($t5) 	# store 0 into 2nd bit of buffer	
-			
+		la $t0, buffer	# $t0 buffer address
+		li $t1, 0
+		sb $t1, ($t0)	# store 0 into first bit of buffer	
+		sb $t1, 1($t0) 	# store 0 into 2nd bit of buffer	
+		
 		# read string from user input
 		li $v0, 8
 		la $a0, buffer
 		li $a1, 32
 		syscall
 		
-		lb $t9, ($t5)	# t9: value of first bit
-		lb $t7, 1($t5)	# t7: value of 2nd bit
+		lb $t9, ($t0)	# t9: value of first bit
+		lb $t7, 1($t0)	# t7: value of 2nd bit
 		
 		# check if value of 2nd bit is anything other than newline (ascii 10)
 		bne $t7, 10, invalidinput
@@ -154,7 +152,7 @@ userinput:
 	
 		checkcolumn:
 			# save column to x ($t0)
-			la $t0, ($t9)
+			sub $t0, $t9, 48
 			# ! counter iterator 
 			li $t4, 1
 
