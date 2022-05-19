@@ -71,9 +71,6 @@ main:
 	
 	j userinput
 
-	li $v0,10 #exits program
-	syscall
-
 	
 userinput:
 # checks if the playervalue ($s4) is 0/1/2 then switches the player turn
@@ -81,11 +78,14 @@ userinput:
 # checks for valid column # and if column is not full
 # writes the playervalue to the array and exits
 	# temporary registers used. values not saved.
+	# t2 player color
+	# t3 temp
 	# t4 counter
+	# t5 temp
 	# t6 address of row major board element
-	# t7 temp value
+	# t7 temp
 	# t8 address of board element
-	# t9 temp value
+	# t9 temp
 
 	# check if playervalue is 0,1,2
 	checkplayerturn:
@@ -124,10 +124,10 @@ userinput:
 	collectinput:
 	
 		# clear first two bits of buffer
-		la $t2, buffer	# $t2 buffer address
+		la $t5, buffer	# $t5 buffer address
 		li $t3, 0
-		sb $t3, ($t2)	# store 0 into first bit of buffer	
-		sb $t3, 1($t2) 	# store 0 into 2nd bit of buffer	
+		sb $t3, ($t5)	# store 0 into first bit of buffer	
+		sb $t3, 1($t5) 	# store 0 into 2nd bit of buffer	
 			
 		# read string from user input
 		li $v0, 8
@@ -135,8 +135,8 @@ userinput:
 		li $a1, 32
 		syscall
 		
-		lb $t9, ($t2)	# t9: value of first bit
-		lb $t7, 1($t2)	# t7: value of 2nd bit
+		lb $t9, ($t5)	# t9: value of first bit
+		lb $t7, 1($t5)	# t7: value of 2nd bit
 		
 		# check if value of 2nd bit is anything other than newline (ascii 10)
 		bne $t7, 10, invalidinput
