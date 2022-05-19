@@ -21,26 +21,23 @@ heap: .word 0x10040000 #heap base address
 
 columns: 	.word 7 # $s7
 rows: 		.word 6 # $s6
+
        msg1: .asciiz "\nWelcome to our game Connect 4!\n"
        msg2: .asciiz "\nPlease enter a number from 1-7 to indicate which column you'd like to drop the checker in: "
-       msg3: .asciiz "\nAfter the checker is dropped in then Player 2 can go."
        msg4: .asciiz "\nHave fun and good luck! :)\n"
        msg5: .asciiz "\nIt's player 1's turn"
        msg6: .asciiz "\nIt's player 2's turn"
-       msg7: .asciiz "Choose a number between 1-7:\n"
-       msg8: .asciiz "Column is full, please choose again.\n"
+       msg8: .asciiz "Column is full, please try another column: "
        msg9: .asciiz "\nThe winner is player 1! Congrats!\n"
        msg10: .asciiz "\nThe winner is player 2! Congrats!\n"
        msg11: .asciiz "\nIt's a tie!\n"
        msg12: .asciiz "The input is invalid, please enter a number from 1-7: "
-       msg13: .asciiz "counter"
-       msg14: .asciiz "loop\n"
-       msg15: .asciiz "Column is full, please try another column: " 
        msg16:.asciiz "\nHow to play: You need to match 4 squares of the same color horizontally, vertically or diagonally to win"
        newl: .asciiz "\n"
        space: .asciiz " "
 
-array: 	.word 	0:42 # 0 = empty 1 = player1, 2 = player2
+array: 	.word 	0:42 	# 0 = empty 1 = player1, 2 = player2
+buffer: .space 32	# 32 byte buffer to hold user input string
 
 .text
 main:
@@ -63,13 +60,9 @@ main:
 	la $a0, msg1 
 	li $v0, 4
 	syscall 
-	
-	
-	
 	la $a0, msg16
 	li $v0, 4#how to play message
 	syscall
-	
 	la $a0, msg4
 	li $v0, 4
 	syscall
@@ -77,6 +70,10 @@ main:
 	
 	
 	j userinput
+
+	li $v0,10 #exits program
+	syscall
+
 	
 userinput:
 # checks if the playervalue ($s4) is 0/1/2 then switches the player turn
@@ -125,14 +122,28 @@ userinput:
 		syscall
 
 	collectinput:
-		# get user input and store in $t9
-		li $v0, 5
+	
+		# clear first two bits of buffer
+		la $t2, buffer	# $t2 buffer address
+		li $t3, 0
+		sb $t3, ($t2)	# store 0 into first bit of buffer	
+		sb $t3, 1($t2) 	# store 0 into 2nd bit of buffer	
+			
+		# read string from user input
+		li $v0, 8
+		la $a0, buffer
+		li $a1, 32
 		syscall
-		move $t9, $v0
+		
+		lb $t9, ($t2)	# t9: value of first bit
+		lb $t7, 1($t2)	# t7: value of 2nd bit
+		
+		# check if value of 2nd bit is anything other than newline (ascii 10)
+		bne $t7, 10, invalidinput
 	
 		# check if user input is out of bounds
-		blt $t9, 1, invalidinput
-		bgt $t9, 7, invalidinput
+		blt $t9, 49, invalidinput
+		bgt $t9, 55, invalidinput
 		j checkcolumn
 	
 		invalidinput:
@@ -230,7 +241,7 @@ userinput:
 						j checkempty
 					
 					columnfull:
-						la $a0, msg15
+						la $a0, msg8
 						li $v0, 4
 						syscall
 						j collectinput
