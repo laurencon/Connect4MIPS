@@ -34,6 +34,9 @@ rows: 		.word 6 # $s6
        msg12: .asciiz "The input is invalid, please enter a number from 1-7: "
        msg16:.asciiz "\nHow to play: You need to match 4 squares of the same color horizontally, vertically or diagonally to win"
        newl: .asciiz "\n"
+       continue: .asciiz "Would you like to continue (0=no or 1=yes): "
+       continueerror: .asciiz "Please only enter 0 or 1: "
+       exitmessage: .asciiz "Program exited, Thank you for playing" 
        space: .asciiz " "
 
 array: 	.word 	0:42 	# 0 = empty 1 = player1, 2 = player2
@@ -42,12 +45,15 @@ buffer: .space 32	# 32 byte buffer to hold user input string
 .text
 main:
 	li $s3,0
+	li $s4,0
 
 	la $s2, array
 	lw $s1, heap
 	jal drawbackground
 	jal DrawGrid
 	#draws background and grid
+	
+	jal cleararray
 	
  	la $s6,rows
  	lw $s6,($s6)
@@ -57,21 +63,34 @@ main:
  	li $t1,0
  	li $v1,4
  	
-	la $a0, msg1 
+	la $a0, msg1
 	li $v0, 4
 	syscall 
 	la $a0, msg16
-	li $v0, 4#how to play message
+	li $v0, 4 # how to play message
 	syscall
 	la $a0, msg4
 	li $v0, 4
 	syscall
 	# Displaying all welcome messages to introduce the game to player
 	
-	
+	li $s4, 2
 	j userinput
 
+cleararray:
+	move $s6, $s2
+	li $s7,0
 	
+	clearloop:
+		sw $0, 0($s6)
+		
+		addi $s7,$s7,1
+		addi $s6,$s6,4
+		
+		blt $s7,42,clearloop
+	clearloopend:
+		jr $ra
+
 userinput:
 # checks if the playervalue ($s4) is 0/1/2 then switches the player turn
 # then prompts the player to choose the column number
@@ -79,9 +98,7 @@ userinput:
 # writes the playervalue to the array and exits
 	# temporary registers used. values not saved.
 	# t2 player color
-	# t3 temp
 	# t4 counter
-	# t5 temp
 	# t6 address of row major board element
 	# t7 temp
 	# t8 address of board element
@@ -124,19 +141,19 @@ userinput:
 	collectinput:
 	
 		# clear first two bits of buffer
-		la $t5, buffer	# $t5 buffer address
-		li $t3, 0
-		sb $t3, ($t5)	# store 0 into first bit of buffer	
-		sb $t3, 1($t5) 	# store 0 into 2nd bit of buffer	
-			
+		la $t0, buffer	# $t0 buffer address
+		li $t1, 0
+		sb $t1, ($t0)	# store 0 into first bit of buffer	
+		sb $t1, 1($t0) 	# store 0 into 2nd bit of buffer	
+		
 		# read string from user input
 		li $v0, 8
 		la $a0, buffer
 		li $a1, 32
 		syscall
 		
-		lb $t9, ($t5)	# t9: value of first bit
-		lb $t7, 1($t5)	# t7: value of 2nd bit
+		lb $t9, ($t0)	# t9: value of first bit
+		lb $t7, 1($t0)	# t7: value of 2nd bit
 		
 		# check if value of 2nd bit is anything other than newline (ascii 10)
 		bne $t7, 10, invalidinput
@@ -154,7 +171,7 @@ userinput:
 	
 		checkcolumn:
 			# save column to x ($t0)
-			la $t0, ($t9)
+			sub $t0, $t9, 48
 			# ! counter iterator 
 			li $t4, 1
 
@@ -704,7 +721,7 @@ convert2dto1d:
 # Time to create the basic grid
 # s4 for white x
 # s5 for white y
-DrawGrid: #draws the white grid
+DrawGrid: # draws the white grid
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
 	
@@ -728,7 +745,7 @@ DrawGrid: #draws the white grid
 			
 			j gridloop2
 		gridexit1:
-			addi $t8,$t8,1#increment counter
+			addi $t8,$t8,1 #increment counter
 			beq $t8,6,gridexit2
 			j gridloop1
 		gridexit2:
@@ -738,5 +755,45 @@ DrawGrid: #draws the white grid
 	jr $ra
 
 exit:
+	la $a0, continue
+	li $v0, 4
+	syscall
+
+continueprompt:
+
+		# clear first two bits of buffer
+		la $t0, buffer	# $t0 buffer address
+		li $t1, 0
+		sb $t1, ($t0)	# store 0 into first bit of buffer	
+		sb $t1, 1($t0) 	# store 0 into 2nd bit of buffer	
+		
+		# read string from user input
+		li $v0, 8
+		la $a0, buffer
+		li $a1, 32
+		syscall
+		
+		lb $t9, ($t0)	# t9: value of first bit
+		lb $t7, 1($t0)	# t7: value of 2nd bit
+		
+		# check if value of 2nd bit is anything other than newline (ascii 10)
+		bne $t7, 10, invalidrestartinput
+	
+		# check if user input is out of bounds
+		beq $t9, 48, quit
+		beq $t9, 49, main
+		
+		invalidrestartinput:
+		la $a0, continueerror
+		li $v0, 4
+		syscall
+	
+		j continueprompt
+
+
+quit:
+	la $a0,exitmessage
+	li $v0, 4
+	syscall 
 	li $v0,10 #exits program
 	syscall
