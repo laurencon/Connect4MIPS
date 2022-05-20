@@ -44,6 +44,7 @@ buffer: .space 32	# 32 byte buffer to hold user input string
 .text
 main:
 	li $s3,0
+	li $s4,0
 
 	la $s2, array
 	lw $s1, heap
@@ -758,17 +759,36 @@ exit:
 	syscall
 
 continueprompt:
-	li $v0,5
-	syscall
 
-	beq $v0,0,quit
-	beq $v0,1,main
+		# clear first two bits of buffer
+		la $t0, buffer	# $t0 buffer address
+		li $t1, 0
+		sb $t1, ($t0)	# store 0 into first bit of buffer	
+		sb $t1, 1($t0) 	# store 0 into 2nd bit of buffer	
+		
+		# read string from user input
+		li $v0, 8
+		la $a0, buffer
+		li $a1, 32
+		syscall
+		
+		lb $t9, ($t0)	# t9: value of first bit
+		lb $t7, 1($t0)	# t7: value of 2nd bit
+		
+		# check if value of 2nd bit is anything other than newline (ascii 10)
+		bne $t7, 10, invalidrestartinput
 	
-	la $a0, continueerror
-	li $v0, 4
-	syscall
+		# check if user input is out of bounds
+		beq $t9, 48, quit
+		beq $t9, 49, main
+		
+		invalidrestartinput:
+		la $a0, continueerror
+		li $v0, 4
+		syscall
 	
-	j continueprompt
+		j continueprompt
+
 
 quit:
 	li $v0,10 #exits program
