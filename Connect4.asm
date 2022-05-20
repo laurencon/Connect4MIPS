@@ -34,6 +34,8 @@ rows: 		.word 6 # $s6
        msg12: .asciiz "The input is invalid, please enter a number from 1-7: "
        msg16:.asciiz "\nHow to play: You need to match 4 squares of the same color horizontally, vertically or diagonally to win"
        newl: .asciiz "\n"
+       continue: .asciiz "Would you like to continue (0 or 1): "
+       continueerror: .asciiz "Please only enter 0 or 1: "
        space: .asciiz " "
 
 array: 	.word 	0:42 	# 0 = empty 1 = player1, 2 = player2
@@ -49,6 +51,8 @@ main:
 	jal DrawGrid
 	#draws background and grid
 	
+	jal cleararray
+	
  	la $s6,rows
  	lw $s6,($s6)
  	la $s7,columns
@@ -57,21 +61,34 @@ main:
  	li $t1,0
  	li $v1,4
  	
-	la $a0, msg1 
+	la $a0, msg1
 	li $v0, 4
 	syscall 
 	la $a0, msg16
-	li $v0, 4#how to play message
+	li $v0, 4 # how to play message
 	syscall
 	la $a0, msg4
 	li $v0, 4
 	syscall
 	# Displaying all welcome messages to introduce the game to player
 	
-	
+	li $s4, 2
 	j userinput
 
+cleararray:
+	move $s6, $s2
+	li $s7,0
 	
+	clearloop:
+		sw $0, 0($s6)
+		
+		addi $s7,$s7,1
+		addi $s6,$s6,4
+		
+		blt $s7,42,clearloop
+	clearloopend:
+		jr $ra
+
 userinput:
 # checks if the playervalue ($s4) is 0/1/2 then switches the player turn
 # then prompts the player to choose the column number
@@ -702,7 +719,7 @@ convert2dto1d:
 # Time to create the basic grid
 # s4 for white x
 # s5 for white y
-DrawGrid: #draws the white grid
+DrawGrid: # draws the white grid
 	addi $sp,$sp,-4
 	sw $ra, 0($sp)
 	
@@ -726,7 +743,7 @@ DrawGrid: #draws the white grid
 			
 			j gridloop2
 		gridexit1:
-			addi $t8,$t8,1#increment counter
+			addi $t8,$t8,1 #increment counter
 			beq $t8,6,gridexit2
 			j gridloop1
 		gridexit2:
@@ -736,5 +753,23 @@ DrawGrid: #draws the white grid
 	jr $ra
 
 exit:
+	la $a0, continue
+	li $v0, 4
+	syscall
+
+continueprompt:
+	li $v0,5
+	syscall
+
+	beq $v0,0,quit
+	beq $v0,1,main
+	
+	la $a0, continueerror
+	li $v0, 4
+	syscall
+	
+	j continueprompt
+
+quit:
 	li $v0,10 #exits program
 	syscall
